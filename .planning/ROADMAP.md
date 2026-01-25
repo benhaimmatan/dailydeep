@@ -26,13 +26,13 @@ This roadmap transforms The Daily Deep from concept to production-ready publishi
   6. Database stores category rotation schedule (7 categories for 7 days of the week)
   7. Database tracks topic history to prevent repetition
 
-**Plans**: TBD
+**Plans:** 4 plans in 3 waves
 
 Plans:
-- [ ] 01-01: Database schema and RLS security (includes categories and topic history tables)
-- [ ] 01-02: Dark mode design system and typography
-- [ ] 01-03: Report detail page with markdown rendering
-- [ ] 01-04: Home page and archive with search/filter
+- [ ] 01-01-PLAN.md - Database schema, RLS security, Supabase client setup (Wave 1)
+- [ ] 01-02-PLAN.md - Dark mode design system, fonts, theme provider (Wave 1)
+- [ ] 01-03-PLAN.md - Report detail page with markdown rendering and sticky TOC (Wave 2)
+- [ ] 01-04-PLAN.md - Home page and archive with search/filter (Wave 3)
 
 ### Phase 2: Generation Engine
 **Goal**: Admin can trigger AI report generation and manage published content
@@ -94,7 +94,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Not started | - |
+| 1. Foundation | 0/4 | Planned | - |
 | 2. Generation Engine | 0/5 | Not started | - |
 | 3. Automation | 0/2 | Not started | - |
 | 4. Polish | 0/2 | Not started | - |
@@ -118,4 +118,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-01-25*
-*Last updated: 2026-01-25 - Added Topic Discovery requirements to Phase 1 and Phase 2*
+*Last updated: 2026-01-25 - Phase 1 planned (4 plans in 3 waves)*

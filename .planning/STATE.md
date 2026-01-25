@@ -5,32 +5,32 @@
 See: .planning/PROJECT.md (updated 2026-01-25)
 
 **Core value:** One click generates a 3,500+ word investigative report with specific data points, tables, citations, and historical context
-**Current focus:** Phase 1 - Foundation
+**Current focus:** Phase 1 - Foundation (Complete)
 
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-01-25 - Completed 01-03-PLAN.md
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 01-04-PLAN.md
 
-Progress: [████░░░░░░░░░░░░] 19% (3/16 plans)
+Progress: [█████░░░░░░░░░░░] 25% (4/16 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 4.3 min
-- Total execution time: 13 min
+- Total plans completed: 4
+- Average duration: 4.0 min
+- Total execution time: 16 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 3/4 | 13 min | 4.3 min |
+| 01-foundation | 4/4 | 16 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (3m), 01-02 (6m), 01-03 (4m)
+- Last 5 plans: 01-01 (3m), 01-02 (6m), 01-03 (4m), 01-04 (3m)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -52,6 +52,8 @@ Recent decisions affecting current work:
 | Playfair Display + Source Sans 3 | 01-02 | Serif headings + sans body for editorial aesthetic |
 | Slugify duplicated for heading ID consistency | 01-03 | Extract-headings and report-content both need identical IDs |
 | scroll-mt-24 for TOC jump offset | 01-03 | Account for sticky header when navigating via TOC |
+| URL state for search/filter | 01-04 | Enables sharing filtered views and browser navigation |
+| 300ms debounce on search | 01-04 | Balances responsiveness with URL update frequency |
 
 ### Pending Todos
 
@@ -64,8 +66,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 01-03-PLAN.md
+Stopped at: Completed 01-04-PLAN.md (Phase 1 complete)
 Resume file: None
 
 ---
-*Next step: Execute 01-04-PLAN.md (Home Page)*
+*Next step: Begin Phase 2 (AI Generation)*

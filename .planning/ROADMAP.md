@@ -16,18 +16,20 @@ This roadmap transforms The Daily Deep from concept to production-ready publishi
 ### Phase 1: Foundation
 **Goal**: Public readers can browse a dark-mode archive of beautifully rendered reports
 **Depends on**: Nothing (first phase)
-**Requirements**: DISP-01, DISP-02, DISP-03, DISP-04, DISC-01, DISC-02, DISC-03, DISC-04, PAGE-01, PAGE-02, PAGE-03, SEC-01
+**Requirements**: DISP-01, DISP-02, DISP-03, DISP-04, DISC-01, DISC-02, DISC-03, DISC-04, PAGE-01, PAGE-02, PAGE-03, SEC-01, TOPIC-01, TOPIC-05
 **Success Criteria** (what must be TRUE):
   1. User can visit home page and see latest published report (or hero CTA if none exist)
   2. User can view any report with proper typography, tables, citations, and dark mode styling
   3. User can search archive by title/content and filter by category
   4. User can browse reports grouped by month with responsive layout on mobile and desktop
   5. Database has RLS enabled preventing unauthorized write access
+  6. Database stores category rotation schedule (7 categories for 7 days of the week)
+  7. Database tracks topic history to prevent repetition
 
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Database schema and RLS security
+- [ ] 01-01: Database schema and RLS security (includes categories and topic history tables)
 - [ ] 01-02: Dark mode design system and typography
 - [ ] 01-03: Report detail page with markdown rendering
 - [ ] 01-04: Home page and archive with search/filter
@@ -35,13 +37,15 @@ Plans:
 ### Phase 2: Generation Engine
 **Goal**: Admin can trigger AI report generation and manage published content
 **Depends on**: Phase 1
-**Requirements**: GEN-01, GEN-02, GEN-03, GEN-05, PAGE-04, ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-04, ADMIN-05, SEC-02
+**Requirements**: GEN-01, GEN-02, GEN-03, GEN-05, PAGE-04, ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-04, ADMIN-05, SEC-02, TOPIC-02, TOPIC-03, TOPIC-04
 **Success Criteria** (what must be TRUE):
   1. Admin can log in with email/password and access protected dashboard
   2. Admin can trigger report generation with one click and see real-time progress during 5-15 minute generation
   3. Generated reports are validated for quality (3000+ words, has sources) before publishing
   4. Admin can view report list with status badges and delete reports
   5. Dashboard shows stats: total reports, reports this month, latest publish date
+  6. System queries Google Trends API to discover trending topics within daily category
+  7. Admin can override/adjust the daily topic before triggering generation
 
 **Plans**: TBD
 
@@ -50,6 +54,7 @@ Plans:
 - [ ] 02-02: Admin dashboard with stats and report list
 - [ ] 02-03: Gemini Interactions API client and async polling
 - [ ] 02-04: Generation trigger with progress feedback and quality validation
+- [ ] 02-05: Google Trends integration and topic selection
 
 ### Phase 3: Automation
 **Goal**: Platform publishes new report automatically every day at 6AM UTC
@@ -90,14 +95,14 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/4 | Not started | - |
-| 2. Generation Engine | 0/4 | Not started | - |
+| 2. Generation Engine | 0/5 | Not started | - |
 | 3. Automation | 0/2 | Not started | - |
 | 4. Polish | 0/2 | Not started | - |
 
 ## Coverage Summary
 
-**Total v1 Requirements:** 29
-**Mapped to Phases:** 29
+**Total v1 Requirements:** 34
+**Mapped to Phases:** 34
 **Unmapped:** 0
 
 | Category | Count | Phase(s) |
@@ -109,7 +114,8 @@ Plans:
 | SEO | 4 | Phase 4 |
 | Admin (ADMIN) | 5 | Phase 2 |
 | Security (SEC) | 3 | Phase 1 (1), Phase 2 (1), Phase 3 (1) |
+| Topic Discovery (TOPIC) | 5 | Phase 1 (2), Phase 2 (3) |
 
 ---
 *Roadmap created: 2026-01-25*
-*Last updated: 2026-01-25*
+*Last updated: 2026-01-25 - Added Topic Discovery requirements to Phase 1 and Phase 2*

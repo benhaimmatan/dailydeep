@@ -57,6 +57,14 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SEC-02**: Admin role check on protected API routes
 - [ ] **SEC-03**: Cron endpoint authorization (secret header)
 
+### Topic Discovery
+
+- [ ] **TOPIC-01**: Predefined category rotation schedule (7 categories for 7 days)
+- [ ] **TOPIC-02**: Google Trends API integration to discover trending topics
+- [ ] **TOPIC-03**: Topic selection within daily category based on trend data
+- [ ] **TOPIC-04**: Admin can override/adjust daily topic before generation
+- [ ] **TOPIC-05**: Store topic history to avoid repetition
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -129,12 +137,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-01 | Phase 1 | Pending |
 | SEC-02 | Phase 2 | Pending |
 | SEC-03 | Phase 3 | Pending |
+| TOPIC-01 | Phase 1 | Pending |
+| TOPIC-02 | Phase 2 | Pending |
+| TOPIC-03 | Phase 2 | Pending |
+| TOPIC-04 | Phase 2 | Pending |
+| TOPIC-05 | Phase 1 | Pending |
 
 **Coverage:**
-- v1 requirements: 29 total
-- Mapped to phases: 29
+- v1 requirements: 34 total
+- Mapped to phases: 34
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-25*
-*Last updated: 2026-01-25 after roadmap creation*
+*Last updated: 2026-01-25 - Added Topic Discovery requirements (TOPIC-01 through TOPIC-05)*

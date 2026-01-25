@@ -29,8 +29,8 @@ This roadmap transforms The Daily Deep from concept to production-ready publishi
 **Plans:** 4 plans in 3 waves
 
 Plans:
-- [ ] 01-01-PLAN.md - Database schema, RLS security, Supabase client setup (Wave 1)
-- [ ] 01-02-PLAN.md - Dark mode design system, fonts, theme provider (Wave 1)
+- [x] 01-01-PLAN.md - Database schema, RLS security, Supabase client setup (Wave 1)
+- [x] 01-02-PLAN.md - Dark mode design system, fonts, theme provider (Wave 1)
 - [ ] 01-03-PLAN.md - Report detail page with markdown rendering and sticky TOC (Wave 2)
 - [ ] 01-04-PLAN.md - Home page and archive with search/filter (Wave 3)
 
@@ -94,7 +94,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Planned | - |
+| 1. Foundation | 2/4 | In progress | - |
 | 2. Generation Engine | 0/5 | Not started | - |
 | 3. Automation | 0/2 | Not started | - |
 | 4. Polish | 0/2 | Not started | - |

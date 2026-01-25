@@ -6,7 +6,7 @@ This roadmap transforms The Daily Deep from concept to production-ready publishi
 
 ## Phases
 
-- [ ] **Phase 1: Foundation** - Database, RLS security, public pages, content display
+- [x] **Phase 1: Foundation** - Database, RLS security, public pages, content display
 - [ ] **Phase 2: Generation Engine** - Gemini AI integration, async polling, admin dashboard
 - [ ] **Phase 3: Automation** - Daily 6AM UTC cron with idempotency
 - [ ] **Phase 4: Polish** - SEO meta tags, structured data, discoverability
@@ -31,8 +31,8 @@ This roadmap transforms The Daily Deep from concept to production-ready publishi
 Plans:
 - [x] 01-01-PLAN.md - Database schema, RLS security, Supabase client setup (Wave 1)
 - [x] 01-02-PLAN.md - Dark mode design system, fonts, theme provider (Wave 1)
-- [ ] 01-03-PLAN.md - Report detail page with markdown rendering and sticky TOC (Wave 2)
-- [ ] 01-04-PLAN.md - Home page and archive with search/filter (Wave 3)
+- [x] 01-03-PLAN.md - Report detail page with markdown rendering and sticky TOC (Wave 2)
+- [x] 01-04-PLAN.md - Home page and archive with search/filter (Wave 3)
 
 ### Phase 2: Generation Engine
 **Goal**: Admin can trigger AI report generation and manage published content
@@ -94,7 +94,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 2/4 | In progress | - |
+| 1. Foundation | 4/4 | ✓ Complete | 2026-01-25 |
 | 2. Generation Engine | 0/5 | Not started | - |
 | 3. Automation | 0/2 | Not started | - |
 | 4. Polish | 0/2 | Not started | - |
@@ -118,4 +118,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-01-25*
-*Last updated: 2026-01-25 - Phase 1 planned (4 plans in 3 waves)*
+*Last updated: 2026-01-25 - Phase 1 complete (verified)*

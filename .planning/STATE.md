@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-25)
 
 **Core value:** One click generates a 3,500+ word investigative report with specific data points, tables, citations, and historical context
-**Current focus:** Phase 2 - Generation Engine (Verified Complete)
+**Current focus:** Phase 3 - Automation (In Progress)
 
 ## Current Position
 
 Phase: 3 of 4 (Automation)
-Plan: 1 of 2 in current phase (03-01 complete)
-Status: In progress
-Last activity: 2026-01-26 - Completed 03-01-PLAN.md (Cron Infrastructure)
+Plan: 2 of 2 in current phase (03-01, 03-02 complete)
+Status: Phase complete
+Last activity: 2026-01-26 - Completed 03-02-PLAN.md (Cron Endpoint Implementation)
 
-Progress: [██████████████░░] 91% (10/11 plans)
+Progress: [████████████████] 100% (11/11 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 4.0 min
-- Total execution time: 40 min
+- Total plans completed: 11
+- Average duration: 4.1 min
+- Total execution time: 45 min
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [██████████████░░] 91% (10/11 plans)
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 16 min | 4.0 min |
 | 02-generation-engine | 5/5 | 20 min | 4.0 min |
-| 03-automation | 1/2 | 4 min | 4.0 min |
+| 03-automation | 2/2 | 9 min | 4.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-05 (5m), 02-03 (3m), 02-04 (3m), 03-01 (4m)
+- Last 5 plans: 02-03 (3m), 02-04 (3m), 03-01 (4m), 03-02 (5m)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -73,10 +73,15 @@ Recent decisions affecting current work:
 | Progress via database updates | 02-04 | Generation progress persisted to generation_jobs table |
 | Permissive INSERT policy for cron_runs | 03-01 | CRON_SECRET validated at API level, RLS INSERT open |
 | 6AM UTC weekday schedule | 03-01 | Generate reports before US/EU business hours |
+| 30-minute stuck job timeout | 03-02 | Generation typically takes 5-15 min, 30 min is safe threshold |
+| UTC dates for idempotency | 03-02 | Ensures consistent behavior regardless of server timezone |
+| Shared generation runner | 03-02 | lib/generation/runner.ts used by both admin and cron endpoints |
 
 ### Pending Todos
 
 - Apply 002_generation_jobs.sql migration to Supabase before testing generation
+- Apply 003_cron_runs.sql migration to Supabase for cron history tracking
+- Set CRON_SECRET environment variable in Vercel production
 
 ### Blockers/Concerns
 
@@ -85,8 +90,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 03-01-PLAN.md
+Stopped at: Completed 03-02-PLAN.md (Phase 3 complete)
 Resume file: None
 
 ---
-*Next step: Execute 03-02-PLAN.md (Cron Endpoint)*
+*Next step: Verify Phase 3 complete or proceed to Phase 4 (Polish)*

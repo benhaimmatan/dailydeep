@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-25)
 
 **Core value:** One click generates a 3,500+ word investigative report with specific data points, tables, citations, and historical context
-**Current focus:** Phase 4 - Polish (In Progress)
+**Current focus:** Phase 4 - Polish (Complete)
 
 ## Current Position
 
 Phase: 4 of 4 (Polish)
-Plan: 1 of 2 in current phase (04-01 complete)
-Status: In progress
-Last activity: 2026-01-26 - Completed 04-01-PLAN.md (Social Meta Tags)
+Plan: 2 of 2 in current phase (04-01, 04-02 complete)
+Status: Phase complete
+Last activity: 2026-01-26 - Completed 04-02-PLAN.md (JSON-LD & Semantic HTML)
 
-Progress: [███████████████░] 92% (12/13 plans)
+Progress: [████████████████] 100% (13/13 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 4.2 min
-- Total execution time: 50 min
+- Total plans completed: 13
+- Average duration: 4.1 min
+- Total execution time: 53 min
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [███████████████░] 92% (12/13 plans)
 | 01-foundation | 4/4 | 16 min | 4.0 min |
 | 02-generation-engine | 5/5 | 20 min | 4.0 min |
 | 03-automation | 2/2 | 9 min | 4.5 min |
-| 04-polish | 1/2 | 5 min | 5.0 min |
+| 04-polish | 2/2 | 8 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (3m), 03-01 (4m), 03-02 (5m), 04-01 (5m)
+- Last 5 plans: 03-01 (4m), 03-02 (5m), 04-01 (5m), 04-02 (3m)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -80,6 +80,10 @@ Recent decisions affecting current work:
 | File-based OG images | 04-01 | opengraph-image.tsx for Next.js auto-discovery |
 | Google Fonts API loading | 04-01 | Load Playfair Display via CSS API for OG images |
 | summary_large_image Twitter Card | 04-01 | Maximum visual impact for social sharing |
+| schema-dts for JSON-LD types | 04-02 | Official schema.org TypeScript types |
+| Organization as author | 04-02 | Transparent about AI-assisted journalism |
+| XSS-safe JSON-LD stringify | 04-02 | Escapes < to \u003c for inline scripts |
+| section with aria-label | 04-02 | Semantic wrapper for article content accessibility |
 
 ### Pending Todos
 
@@ -94,8 +98,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 04-01-PLAN.md (Social Meta Tags)
+Stopped at: Completed 04-02-PLAN.md (JSON-LD & Semantic HTML)
 Resume file: None
 
 ---
-*Next step: Execute 04-02-PLAN.md (JSON-LD & Sitemap)*
+*Project complete! All 13 plans across 4 phases executed successfully.*

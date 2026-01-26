@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-01-25)
 
 **Core value:** One click generates a 3,500+ word investigative report with specific data points, tables, citations, and historical context
-**Current focus:** Phase 1 - Foundation (Complete)
+**Current focus:** Phase 2 - Generation Engine (In Progress)
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation)
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 01-04-PLAN.md
+Phase: 2 of 4 (Generation Engine)
+Plan: 2 of 5 in current phase
+Status: In progress
+Last activity: 2026-01-26 - Completed 02-02-PLAN.md
 
-Progress: [█████░░░░░░░░░░░] 25% (4/16 plans)
+Progress: [██████░░░░░░░░░░] 31% (5/16 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 4.0 min
-- Total execution time: 16 min
+- Total plans completed: 5
+- Average duration: 4.2 min
+- Total execution time: 21 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 16 min | 4.0 min |
+| 02-generation-engine | 1/5 | 5 min | 5.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (3m), 01-02 (6m), 01-03 (4m), 01-04 (3m)
+- Last 5 plans: 01-02 (6m), 01-03 (4m), 01-04 (3m), 02-02 (5m)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -54,20 +55,25 @@ Recent decisions affecting current work:
 | scroll-mt-24 for TOC jump offset | 01-03 | Account for sticky header when navigating via TOC |
 | URL state for search/filter | 01-04 | Enables sharing filtered views and browser navigation |
 | 300ms debounce on search | 01-04 | Balances responsiveness with URL update frequency |
+| Zod v4 type assertion for zod-to-json-schema | 02-02 | Compatibility workaround for schema generation |
+| gemini-2.5-flash model | 02-02 | Balance of quality and cost for report generation |
+| 15000 char minimum in Zod schema | 02-02 | Enforces 3000+ word report requirement |
+| Progress callback pattern | 02-02 | Real-time status updates for async job tracking |
 
 ### Pending Todos
 
-None - Supabase configured and Phase 1 verified.
+- Apply 002_generation_jobs.sql migration to Supabase before testing generation
 
 ### Blockers/Concerns
 
 - Budget clarification needed: Research indicates Gemini free tier (5 reports/month) is insufficient for daily production. $20/month minimum for Gemini Advanced recommended. Confirm before Phase 2.
+- Pre-existing lint errors in trends module (02-05) cause build failure - needs cleanup
 
 ## Session Continuity
 
-Last session: 2026-01-25
-Stopped at: Phase 1 verified and complete
+Last session: 2026-01-26
+Stopped at: Completed 02-02-PLAN.md (Generation Infrastructure)
 Resume file: None
 
 ---
-*Next step: /gsd:plan-phase 2 (Generation Engine)*
+*Next step: Execute remaining Phase 2 plans (02-03, 02-04, 02-05)*

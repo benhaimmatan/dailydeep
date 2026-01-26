@@ -47,14 +47,14 @@ Plans:
   6. System queries Google Trends API to discover trending topics within daily category
   7. Admin can override/adjust the daily topic before triggering generation
 
-**Plans**: TBD
+**Plans:** 5 plans in 3 waves
 
 Plans:
-- [ ] 02-01: Admin authentication and protected routes
-- [ ] 02-02: Admin dashboard with stats and report list
-- [ ] 02-03: Gemini Interactions API client and async polling
-- [ ] 02-04: Generation trigger with progress feedback and quality validation
-- [ ] 02-05: Google Trends integration and topic selection
+- [ ] 02-01-PLAN.md - Admin authentication and protected routes (Wave 1)
+- [ ] 02-02-PLAN.md - Gemini client, schemas, and generation_jobs table (Wave 1)
+- [ ] 02-03-PLAN.md - Admin dashboard with stats and report management (Wave 2)
+- [ ] 02-04-PLAN.md - Generation trigger with progress feedback and quality validation (Wave 3)
+- [ ] 02-05-PLAN.md - Google Trends integration and topic selection (Wave 1)
 
 ### Phase 3: Automation
 **Goal**: Platform publishes new report automatically every day at 6AM UTC
@@ -94,8 +94,8 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | ✓ Complete | 2026-01-25 |
-| 2. Generation Engine | 0/5 | Not started | - |
+| 1. Foundation | 4/4 | Complete | 2026-01-25 |
+| 2. Generation Engine | 0/5 | Planning complete | - |
 | 3. Automation | 0/2 | Not started | - |
 | 4. Polish | 0/2 | Not started | - |
 
@@ -118,4 +118,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-01-25*
-*Last updated: 2026-01-25 - Phase 1 complete (verified)*
+*Last updated: 2026-01-26 - Phase 2 planning complete (5 plans in 3 waves)*

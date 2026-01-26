@@ -67,11 +67,13 @@ const components: Components = {
     </p>
   ),
 
-  // Tables with minimal, editorial styling
+  // Tables with minimal, editorial styling - wrapped in figure for semantic grouping
   table: ({ children }) => (
-    <div className="overflow-x-auto my-8">
-      <table className="w-full">{children}</table>
-    </div>
+    <figure className="overflow-x-auto my-8">
+      <table className="w-full" role="table">
+        {children}
+      </table>
+    </figure>
   ),
   thead: ({ children }) => <thead>{children}</thead>,
   tbody: ({ children }) => <tbody>{children}</tbody>,
@@ -154,19 +156,20 @@ const components: Components = {
   // Emphasis/italic text
   em: ({ children }) => <em className="italic">{children}</em>,
 
-  // Horizontal rule
-  hr: () => <hr className="border-border/50 my-8" />,
+  // Horizontal rule with semantic role
+  hr: () => <hr className="border-border/50 my-8" role="separator" />,
 }
 
 /**
  * Renders markdown content with premium editorial styling
+ * Uses semantic HTML5 elements for accessibility and SEO
  */
 export function ReportContent({ content }: ReportContentProps) {
   return (
-    <div className="prose-custom">
+    <section className="prose-custom" aria-label="Article content">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
-    </div>
+    </section>
   )
 }

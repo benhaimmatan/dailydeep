@@ -42,8 +42,8 @@ export async function GET(request: Request) {
       totalFound: trends.length,
       filtered: trends.length - filteredTrends.length,
     });
-  } catch (error: any) {
-    console.error('Trends API error:', error);
+  } catch (err) {
+    console.error('Trends API error:', err);
     return NextResponse.json(
       { error: 'Failed to fetch trends', trends: [] },
       { status: 200 } // Return 200 with empty trends to allow fallback

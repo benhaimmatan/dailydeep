@@ -35,10 +35,10 @@ export async function getDailyTrends(geo = 'US'): Promise<TrendingTopic[]> {
 
     const trends = data.default.trendingSearchesDays[0]?.trendingSearches || [];
 
-    return trends.slice(0, 20).map((trend: any) => ({
+    return trends.slice(0, 20).map((trend: { title?: { query?: string }; formattedTraffic?: string; relatedQueries?: { query: string }[] }) => ({
       title: trend.title?.query || '',
       traffic: trend.formattedTraffic || '',
-      relatedQueries: (trend.relatedQueries || []).map((q: any) => q.query),
+      relatedQueries: (trend.relatedQueries || []).map((q) => q.query),
     }));
   } catch (error) {
     console.error('Failed to fetch daily trends:', error);
@@ -68,7 +68,7 @@ export async function getTrendsByCategory(
   try {
     // Try to get category-specific trends using interestByRegion
     // This gives us topics that are more relevant to the category
-    const categoryResults = await googleTrends.interestByRegion({
+    await googleTrends.interestByRegion({
       keyword: categoryName.toLowerCase(),
       geo,
     });
@@ -76,7 +76,7 @@ export async function getTrendsByCategory(
     // Parse and combine with daily trends for best results
     // Return daily trends for now with the category context
     return allTrends.slice(0, 10);
-  } catch (error) {
+  } catch {
     // Fallback to daily trends if category query fails
     console.warn(`Category query failed for ${categoryName}, using daily trends`);
     return allTrends.slice(0, 10);

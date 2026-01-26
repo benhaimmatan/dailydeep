@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-25)
 
 **Core value:** One click generates a 3,500+ word investigative report with specific data points, tables, citations, and historical context
-**Current focus:** Phase 3 - Automation (Verified Complete)
+**Current focus:** Phase 4 - Polish (In Progress)
 
 ## Current Position
 
-Phase: 3 of 4 (Automation)
-Plan: 2 of 2 in current phase (03-01, 03-02 complete)
-Status: Phase verified complete
-Last activity: 2026-01-26 - Phase 3 verified (4/4 success criteria passed)
+Phase: 4 of 4 (Polish)
+Plan: 1 of 2 in current phase (04-01 complete)
+Status: In progress
+Last activity: 2026-01-26 - Completed 04-01-PLAN.md (Social Meta Tags)
 
-Progress: [██████████████░░] 85% (11/13 plans)
+Progress: [███████████████░] 92% (12/13 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 4.1 min
-- Total execution time: 45 min
+- Total plans completed: 12
+- Average duration: 4.2 min
+- Total execution time: 50 min
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [██████████████░░] 85% (11/13 plans)
 | 01-foundation | 4/4 | 16 min | 4.0 min |
 | 02-generation-engine | 5/5 | 20 min | 4.0 min |
 | 03-automation | 2/2 | 9 min | 4.5 min |
+| 04-polish | 1/2 | 5 min | 5.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (3m), 02-04 (3m), 03-01 (4m), 03-02 (5m)
+- Last 5 plans: 02-04 (3m), 03-01 (4m), 03-02 (5m), 04-01 (5m)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 | 30-minute stuck job timeout | 03-02 | Generation typically takes 5-15 min, 30 min is safe threshold |
 | UTC dates for idempotency | 03-02 | Ensures consistent behavior regardless of server timezone |
 | Shared generation runner | 03-02 | lib/generation/runner.ts used by both admin and cron endpoints |
+| File-based OG images | 04-01 | opengraph-image.tsx for Next.js auto-discovery |
+| Google Fonts API loading | 04-01 | Load Playfair Display via CSS API for OG images |
+| summary_large_image Twitter Card | 04-01 | Maximum visual impact for social sharing |
 
 ### Pending Todos
 
@@ -90,8 +94,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 03-02-PLAN.md (Phase 3 complete)
+Stopped at: Completed 04-01-PLAN.md (Social Meta Tags)
 Resume file: None
 
 ---
-*Next step: /gsd:discuss-phase 4 or /gsd:plan-phase 4 (Polish)*
+*Next step: Execute 04-02-PLAN.md (JSON-LD & Sitemap)*

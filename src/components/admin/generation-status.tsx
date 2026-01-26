@@ -10,11 +10,13 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 interface Props {
   jobId: string;
   onComplete?: () => void;
+  onRetry?: (newJobId: string) => void;
 }
 
-export function GenerationStatus({ jobId, onComplete }: Props) {
+export function GenerationStatus({ jobId, onComplete, onRetry }: Props) {
   const router = useRouter();
   const [shouldPoll, setShouldPoll] = useState(true);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const { data: job, error } = useSWR<GenerationJob>(
     `/api/admin/status/${jobId}`,
@@ -30,6 +32,33 @@ export function GenerationStatus({ jobId, onComplete }: Props) {
       setShouldPoll(false);
     }
   }, [job?.status]);
+
+  const handleRetry = async () => {
+    if (!job) return;
+
+    setIsRetrying(true);
+    try {
+      const response = await fetch('/api/admin/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: job.topic,
+          categoryId: job.category_id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.jobId) {
+        // Call parent callback to update to new job
+        onRetry?.(data.jobId);
+      }
+    } catch (error) {
+      console.error('Retry failed:', error);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   if (error) {
     return (
@@ -68,6 +97,16 @@ export function GenerationStatus({ jobId, onComplete }: Props) {
 
       {job.status === 'failed' && job.error && (
         <p className="mt-2 text-sm text-red-400">Error: {job.error}</p>
+      )}
+
+      {job.status === 'failed' && (
+        <button
+          onClick={handleRetry}
+          disabled={isRetrying}
+          className="mt-4 px-4 py-2 border border-border rounded-md hover:bg-muted disabled:opacity-50"
+        >
+          {isRetrying ? 'Retrying...' : 'Retry Generation'}
+        </button>
       )}
 
       {job.status === 'completed' && job.report_id && (

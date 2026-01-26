@@ -8,6 +8,7 @@ import { ReportSources } from '@/components/report/report-sources'
 import { extractHeadings } from '@/lib/utils/extract-headings'
 import { calculateReadingTime } from '@/lib/utils/reading-time'
 import type { ReportWithCategory } from '@/types/database'
+import { generateArticleJsonLd, safeJsonLdStringify } from '@/lib/seo/json-ld'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -100,8 +101,18 @@ export default async function ReportPage({ params }: PageProps) {
   // Get category name with fallback
   const categoryName = report.category?.name ?? 'Uncategorized'
 
+  // Generate JSON-LD structured data for SEO
+  const jsonLd = generateArticleJsonLd(report)
+
   return (
     <article className="max-w-6xl mx-auto px-4 py-8">
+      {/* JSON-LD structured data for Google rich results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLdStringify(jsonLd),
+        }}
+      />
       <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-12">
         {/* Main content */}
         <main>

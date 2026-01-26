@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-01-25)
 
 **Core value:** One click generates a 3,500+ word investigative report with specific data points, tables, citations, and historical context
-**Current focus:** Phase 2 - Generation Engine (In Progress)
+**Current focus:** Phase 2 - Generation Engine (Complete)
 
 ## Current Position
 
 Phase: 2 of 4 (Generation Engine)
-Plan: 4 of 5 in current phase (02-01, 02-02, 02-03, 02-05 complete)
-Status: In progress
-Last activity: 2026-01-26 - Completed 02-03-PLAN.md (Admin Dashboard)
+Plan: 5 of 5 in current phase (02-01, 02-02, 02-03, 02-04, 02-05 complete)
+Status: Phase complete
+Last activity: 2026-01-26 - Completed 02-04-PLAN.md (Generation Trigger)
 
-Progress: [████████████░░░░] 50% (8/16 plans)
+Progress: [█████████████░░░] 56% (9/16 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 4.1 min
-- Total execution time: 33 min
+- Total plans completed: 9
+- Average duration: 4.0 min
+- Total execution time: 36 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 16 min | 4.0 min |
-| 02-generation-engine | 4/5 | 17 min | 4.3 min |
+| 02-generation-engine | 5/5 | 20 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (5m), 02-01 (4m), 02-05 (5m), 02-03 (3m)
+- Last 5 plans: 02-01 (4m), 02-05 (5m), 02-03 (3m), 02-04 (3m)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -67,6 +67,9 @@ Recent decisions affecting current work:
 | Admin API auth pattern | 02-03 | getUser() + ADMIN_EMAIL check for API routes |
 | Status badge colors | 02-03 | gray=draft, green=published, amber=generating, red=failed |
 | Responsive report list | 02-03 | table on desktop, cards on mobile |
+| Fire-and-forget async pattern | 02-04 | runGeneration called without await for immediate jobId response |
+| SWR polling with state control | 02-04 | useState controls refreshInterval based on job status |
+| Progress via database updates | 02-04 | Generation progress persisted to generation_jobs table |
 
 ### Pending Todos
 
@@ -79,8 +82,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 02-03-PLAN.md (Admin Dashboard)
+Stopped at: Completed 02-04-PLAN.md (Generation Trigger)
 Resume file: None
 
 ---
-*Next step: Execute remaining Phase 2 plan (02-04)*
+*Next step: Phase 2 complete. Ready for Phase 3 (Scheduling & Automation)*

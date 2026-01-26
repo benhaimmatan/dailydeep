@@ -57,7 +57,7 @@ Plans:
 - [x] 02-05-PLAN.md - Google Trends integration and topic selection (Wave 1)
 
 ### Phase 3: Automation
-**Goal**: Platform publishes new report automatically every day at 6AM UTC
+**Goal**: Platform publishes new report automatically every day at 6AM UTC (weekdays only)
 **Depends on**: Phase 2
 **Requirements**: GEN-04, SEC-03
 **Success Criteria** (what must be TRUE):
@@ -66,11 +66,11 @@ Plans:
   3. System prevents duplicate reports when cron runs multiple times
   4. Failed generations are detected and logged for admin review
 
-**Plans**: TBD
+**Plans:** 2 plans in 1 wave
 
 Plans:
-- [ ] 03-01: Vercel cron configuration and secured endpoint
-- [ ] 03-02: Idempotency and failure recovery
+- [ ] 03-01-PLAN.md - Cron infrastructure: database migration, vercel.json, TypeScript types (Wave 1)
+- [ ] 03-02-PLAN.md - Cron utilities, generation runner, secured endpoint, retry button (Wave 1)
 
 ### Phase 4: Polish
 **Goal**: Reports are discoverable via search engines with proper metadata

@@ -91,6 +91,27 @@ export interface GenerationJob {
 }
 
 /**
+ * Cron run status enum values
+ */
+export type CronRunStatus = 'success' | 'skipped' | 'failed'
+
+/**
+ * Cron run execution record for tracking automated generation
+ */
+export interface CronRun {
+  id: string
+  started_at: string
+  completed_at: string | null
+  status: CronRunStatus
+  topic: string | null
+  category_name: string | null
+  report_id: string | null
+  error: string | null
+  skip_reason: string | null
+  created_at: string
+}
+
+/**
  * Database schema type for Supabase client
  */
 export interface Database {

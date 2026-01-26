@@ -82,11 +82,11 @@ Plans:
   3. Report pages use semantic HTML structure (article, section, proper headings)
   4. Reports include JSON-LD Article structured data for rich search results
 
-**Plans**: TBD
+**Plans:** 2 plans in 1 wave
 
 Plans:
-- [ ] 04-01: Dynamic meta tags and OpenGraph
-- [ ] 04-02: Semantic HTML and JSON-LD structured data
+- [ ] 04-01-PLAN.md - Dynamic meta tags, Twitter Cards, OG image generation (Wave 1)
+- [ ] 04-02-PLAN.md - Semantic HTML structure and JSON-LD Article schema (Wave 1)
 
 ## Progress
 

@@ -53,21 +53,29 @@ export async function generateMetadata({
     }
   }
 
+  const title = report.seo_title || report.title
+  const description =
+    report.seo_description ||
+    report.summary ||
+    report.content.slice(0, 160).trim() + '...'
+
   return {
-    title: report.seo_title || report.title,
-    description:
-      report.seo_description ||
-      report.summary ||
-      report.content.slice(0, 160).trim() + '...',
+    title,
+    description,
     keywords: report.seo_keywords || undefined,
     openGraph: {
-      title: report.seo_title || report.title,
-      description:
-        report.seo_description ||
-        report.summary ||
-        report.content.slice(0, 160).trim() + '...',
       type: 'article',
+      title,
+      description,
       publishedTime: report.published_at || undefined,
+      modifiedTime: report.updated_at,
+      authors: ['The Daily Deep'],
+      section: report.category?.name || 'News',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   }
 }

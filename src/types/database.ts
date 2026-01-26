@@ -70,6 +70,27 @@ export interface TopicHistory {
 }
 
 /**
+ * Generation job status enum values
+ */
+export type GenerationJobStatus = 'pending' | 'generating' | 'validating' | 'completed' | 'failed'
+
+/**
+ * Generation job for async report generation tracking
+ */
+export interface GenerationJob {
+  id: string
+  topic: string
+  category_id: string | null
+  status: GenerationJobStatus
+  progress: string | null
+  error: string | null
+  report_id: string | null
+  started_at: string
+  completed_at: string | null
+  created_at: string
+}
+
+/**
  * Database schema type for Supabase client
  */
 export interface Database {
@@ -89,6 +110,11 @@ export interface Database {
         Row: TopicHistory
         Insert: Omit<TopicHistory, 'id' | 'used_at'>
         Update: Partial<Omit<TopicHistory, 'id' | 'used_at'>>
+      }
+      generation_jobs: {
+        Row: GenerationJob
+        Insert: Omit<GenerationJob, 'id' | 'created_at' | 'started_at'>
+        Update: Partial<Omit<GenerationJob, 'id' | 'created_at'>>
       }
     }
   }

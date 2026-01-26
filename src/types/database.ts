@@ -137,6 +137,11 @@ export interface Database {
         Insert: Omit<GenerationJob, 'id' | 'created_at' | 'started_at'>
         Update: Partial<Omit<GenerationJob, 'id' | 'created_at'>>
       }
+      cron_runs: {
+        Row: CronRun
+        Insert: Omit<CronRun, 'id' | 'created_at'>
+        Update: Partial<Omit<CronRun, 'id' | 'created_at'>>
+      }
     }
   }
 }

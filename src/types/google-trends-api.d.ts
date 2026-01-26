@@ -1,11 +1,11 @@
 declare module 'google-trends-api' {
-  interface DailyTrendsOptions {
+  export interface DailyTrendsOptions {
     geo?: string;
     trendDate?: Date;
     hl?: string;
   }
 
-  interface InterestByRegionOptions {
+  export interface InterestByRegionOptions {
     keyword: string | string[];
     geo?: string;
     resolution?: string;
@@ -13,7 +13,7 @@ declare module 'google-trends-api' {
     endTime?: Date;
   }
 
-  interface InterestOverTimeOptions {
+  export interface InterestOverTimeOptions {
     keyword: string | string[];
     geo?: string;
     startTime?: Date;
@@ -21,7 +21,7 @@ declare module 'google-trends-api' {
     category?: number;
   }
 
-  interface RelatedQueriesOptions {
+  export interface RelatedQueriesOptions {
     keyword: string | string[];
     geo?: string;
     startTime?: Date;
@@ -29,15 +29,13 @@ declare module 'google-trends-api' {
     category?: number;
   }
 
-  function dailyTrends(options: DailyTrendsOptions): Promise<string>;
-  function interestByRegion(options: InterestByRegionOptions): Promise<string>;
-  function interestOverTime(options: InterestOverTimeOptions): Promise<string>;
-  function relatedQueries(options: RelatedQueriesOptions): Promise<string>;
+  export interface GoogleTrendsApi {
+    dailyTrends(options: DailyTrendsOptions): Promise<string>;
+    interestByRegion(options: InterestByRegionOptions): Promise<string>;
+    interestOverTime(options: InterestOverTimeOptions): Promise<string>;
+    relatedQueries(options: RelatedQueriesOptions): Promise<string>;
+  }
 
-  export default {
-    dailyTrends,
-    interestByRegion,
-    interestOverTime,
-    relatedQueries,
-  };
+  const googleTrends: GoogleTrendsApi;
+  export default googleTrends;
 }

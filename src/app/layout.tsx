@@ -16,7 +16,11 @@ const sourceSans = Source_Sans_3({
 })
 
 export const metadata: Metadata = {
-  title: "The Daily Deep",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://thedailydeep.com'),
+  title: {
+    default: "The Daily Deep",
+    template: "%s | The Daily Deep",
+  },
   description: "Premium AI-powered investigative reports published daily",
 }
 

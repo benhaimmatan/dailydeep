@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getDailyTrends } from '@/lib/trends/client';
+import { autoSelectTopic } from '@/lib/topics/selector';
 import { runGeneration } from '@/lib/generation/runner';
 import {
   hasReportForToday,
@@ -72,9 +72,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Category not found' }, { status: 500 });
   }
 
-  // 6. Get trending topic
-  const trends = await getDailyTrends();
-  const topic = trends[0]?.title || `${category.name} Analysis`;
+  // 6. Auto-select trending topic using multi-source aggregation
+  console.log(`\n🔍 Auto-selecting topic for category: ${category.name}`);
+  const topic = await autoSelectTopic(category.name, supabase);
+  console.log(`📰 Selected topic: ${topic}`);
 
   // 7. Create generation job
   const { data: job, error: jobError } = await supabase

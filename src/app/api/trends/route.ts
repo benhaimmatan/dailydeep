@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { getTrendsByCategory, filterUsedTopics } from '@/lib/trends/client';
+import { getTrendingTopicsForAdmin } from '@/lib/topics/selector';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -20,27 +20,24 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get trending topics for category
-    const trends = await getTrendsByCategory(categoryName, 'US');
+    // Get trending topics using multi-source aggregation
+    const trendingTopics = await getTrendingTopicsForAdmin(categoryName, supabase);
 
-    // Get recently used topics from topic_history (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const { data: usedTopics } = await supabase
-      .from('topic_history')
-      .select('topic')
-      .gte('used_at', thirtyDaysAgo.toISOString());
-
-    // Filter out recently used topics
-    const usedTopicsList = (usedTopics || []).map((t) => t.topic);
-    const filteredTrends = filterUsedTopics(trends, usedTopicsList);
+    // Transform to match expected format for TopicSelector component
+    const trends = trendingTopics.map(t => ({
+      title: t.topic,
+      traffic: `${t.sourceCount} sources`,
+      hotnessScore: t.hotnessScore,
+      sources: t.sources,
+      sampleHeadlines: t.sampleHeadlines,
+      firstSeenHoursAgo: t.firstSeenHoursAgo,
+    }));
 
     return NextResponse.json({
       category: categoryName,
-      trends: filteredTrends,
+      trends,
       totalFound: trends.length,
-      filtered: trends.length - filteredTrends.length,
+      filtered: 0,
     });
   } catch (err) {
     console.error('Trends API error:', err);

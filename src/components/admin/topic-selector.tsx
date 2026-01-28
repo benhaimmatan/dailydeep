@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TrendingTopic } from '@/lib/trends/client';
+
+interface TrendingTopic {
+  title: string;
+  traffic: string;
+  hotnessScore: number;
+  sources: string[];
+  sampleHeadlines: string[];
+  firstSeenHoursAgo: number;
+}
 
 interface Props {
   categoryName: string;
@@ -10,11 +18,26 @@ interface Props {
   disabled?: boolean;
 }
 
+function getHotnessEmoji(score: number): string {
+  if (score >= 500) return '🔥🔥🔥';
+  if (score >= 300) return '🔥🔥';
+  if (score >= 150) return '🔥';
+  return '📰';
+}
+
+function getHotnessLabel(score: number): string {
+  if (score >= 500) return 'Very Hot';
+  if (score >= 300) return 'Hot';
+  if (score >= 150) return 'Trending';
+  return 'Recent';
+}
+
 export function TopicSelector({ categoryName, value, onChange, disabled }: Props) {
   const [trends, setTrends] = useState<TrendingTopic[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   // Fetch trends when category changes
   useEffect(() => {
@@ -65,7 +88,7 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium flex items-center gap-2">
             <span className="text-primary">Trending in {categoryName}</span>
-            {loading && <span className="animate-pulse">...</span>}
+            {loading && <span className="animate-pulse text-muted-foreground">fetching from multiple sources...</span>}
           </h3>
           <button
             type="button"
@@ -90,39 +113,88 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
 
             {trends.length > 0 && (
               <div className="space-y-2">
-                {trends.slice(0, 5).map((trend, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => onChange(trend.title)}
-                    disabled={disabled}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors
-                      ${value === trend.title
-                        ? 'bg-primary/20 border border-primary text-primary'
-                        : 'bg-background border border-border hover:border-primary/50'
-                      }
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                    `}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{trend.title}</span>
-                      {trend.traffic && (
-                        <span className="text-xs text-muted-foreground">
-                          {trend.traffic} searches
+                {trends.slice(0, 7).map((trend, index) => (
+                  <div key={index} className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => onChange(trend.title)}
+                      disabled={disabled}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors
+                        ${value === trend.title
+                          ? 'bg-primary/20 border border-primary text-primary'
+                          : 'bg-background border border-border hover:border-primary/50'
+                        }
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                      `}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium flex items-center gap-2">
+                          <span>{getHotnessEmoji(trend.hotnessScore)}</span>
+                          <span>{trend.title}</span>
                         </span>
-                      )}
-                    </div>
-                    {trend.relatedQueries.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Related: {trend.relatedQueries.slice(0, 3).join(', ')}
-                      </p>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`px-1.5 py-0.5 rounded ${
+                            trend.hotnessScore >= 300
+                              ? 'bg-red-500/20 text-red-400'
+                              : trend.hotnessScore >= 150
+                              ? 'bg-amber-500/20 text-amber-400'
+                              : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {getHotnessLabel(trend.hotnessScore)}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {trend.traffic}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* First seen indicator */}
+                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                        <span>First seen: {trend.firstSeenHoursAgo}h ago</span>
+                        <span>•</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedIndex(expandedIndex === index ? null : index);
+                          }}
+                          className="text-primary hover:underline"
+                        >
+                          {expandedIndex === index ? 'Hide details' : 'Show details'}
+                        </button>
+                      </div>
+                    </button>
+
+                    {/* Expanded details */}
+                    {expandedIndex === index && (
+                      <div className="ml-3 pl-3 border-l-2 border-primary/30 text-xs space-y-2 py-2">
+                        <div>
+                          <span className="text-muted-foreground">Sources: </span>
+                          <span className="text-foreground">
+                            {trend.sources.slice(0, 5).join(', ')}
+                            {trend.sources.length > 5 && ` +${trend.sources.length - 5} more`}
+                          </span>
+                        </div>
+                        {trend.sampleHeadlines.length > 0 && (
+                          <div>
+                            <span className="text-muted-foreground block mb-1">Sample headlines:</span>
+                            <ul className="space-y-1">
+                              {trend.sampleHeadlines.slice(0, 3).map((headline, i) => (
+                                <li key={i} className="text-foreground/80 italic">
+                                  &ldquo;{headline.slice(0, 80)}{headline.length > 80 ? '...' : ''}&rdquo;
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </button>
+                  </div>
                 ))}
 
-                {trends.length > 5 && (
+                {trends.length > 7 && (
                   <p className="text-xs text-muted-foreground text-center mt-2">
-                    +{trends.length - 5} more trending topics
+                    +{trends.length - 7} more trending topics
                   </p>
                 )}
               </div>
@@ -132,7 +204,7 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Select a trending topic or enter your own. Recently used topics are filtered out.
+        Topics ranked by hotness score (source diversity × quality × recency). Recently used topics filtered out.
       </p>
     </div>
   );

@@ -35,6 +35,9 @@ export async function GET(request: Request) {
       meatScore: t.meatScore,
       entityDensity: t.entityDensity,
       sentimentVariance: t.sentimentVariance,
+      // Depth-Score fields
+      depthScore: t.depthScore,
+      isShallow: t.isShallow,
     }));
 
     return NextResponse.json({

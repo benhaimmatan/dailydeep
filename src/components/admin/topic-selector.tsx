@@ -13,6 +13,9 @@ interface TrendingTopic {
   meatScore?: number;
   entityDensity?: number;
   sentimentVariance?: number;
+  // Depth-Score fields
+  depthScore?: number;
+  isShallow?: boolean;
 }
 
 interface Props {
@@ -52,7 +55,36 @@ function getMeatScoreLabel(score: number | undefined): string {
   return 'Standard';
 }
 
-function getDisplayScore(trend: TrendingTopic): { score: number; emoji: string; label: string; isMeatScore: boolean } {
+function getDepthLabel(depthScore: number | undefined, isShallow: boolean | undefined): string {
+  if (isShallow) return 'Shallow Update';
+  if (!depthScore) return '';
+  if (depthScore >= 500) return 'Deep Analysis';
+  if (depthScore >= 300) return 'Substantive';
+  if (depthScore >= 150) return 'Moderate Depth';
+  return 'Breaking News';
+}
+
+function getDepthEmoji(depthScore: number | undefined, isShallow: boolean | undefined): string {
+  if (isShallow) return '\u26A0\uFE0F'; // Warning emoji
+  if (!depthScore) return '';
+  if (depthScore >= 500) return '\uD83D\uDD2C'; // Microscope
+  if (depthScore >= 300) return '\uD83D\uDCCA'; // Chart
+  return '';
+}
+
+function getDisplayScore(trend: TrendingTopic): {
+  score: number;
+  emoji: string;
+  label: string;
+  isMeatScore: boolean;
+  depthLabel: string;
+  depthEmoji: string;
+  isShallow: boolean;
+} {
+  const depthLabel = getDepthLabel(trend.depthScore, trend.isShallow);
+  const depthEmoji = getDepthEmoji(trend.depthScore, trend.isShallow);
+  const isShallow = trend.isShallow ?? false;
+
   // Prefer Meat-Score when available and meaningful
   if (trend.meatScore && trend.meatScore >= 100) {
     return {
@@ -60,6 +92,9 @@ function getDisplayScore(trend: TrendingTopic): { score: number; emoji: string; 
       emoji: getMeatScoreEmoji(trend.meatScore) || getHotnessEmoji(trend.hotnessScore),
       label: getMeatScoreLabel(trend.meatScore) || getHotnessLabel(trend.hotnessScore),
       isMeatScore: true,
+      depthLabel,
+      depthEmoji,
+      isShallow,
     };
   }
   // Fallback to hotness score
@@ -68,6 +103,9 @@ function getDisplayScore(trend: TrendingTopic): { score: number; emoji: string; 
     emoji: getHotnessEmoji(trend.hotnessScore),
     label: getHotnessLabel(trend.hotnessScore),
     isMeatScore: false,
+    depthLabel,
+    depthEmoji,
+    isShallow,
   };
 }
 
@@ -163,17 +201,32 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
                       className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors
                         ${value === trend.title
                           ? 'bg-primary/20 border border-primary text-primary'
+                          : displayScore.isShallow
+                          ? 'bg-background border border-amber-500/30 opacity-70 hover:border-amber-500/50'
                           : 'bg-background border border-border hover:border-primary/50'
                         }
                         disabled:opacity-50 disabled:cursor-not-allowed
                       `}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium flex items-center gap-2">
-                          <span>{displayScore.emoji}</span>
+                        <span className={`font-medium flex items-center gap-2 ${displayScore.isShallow ? 'text-muted-foreground' : ''}`}>
+                          <span>{displayScore.depthEmoji || displayScore.emoji}</span>
                           <span>{trend.title}</span>
                         </span>
                         <div className="flex items-center gap-2 text-xs">
+                          {displayScore.depthLabel && (
+                            <span className={`px-1.5 py-0.5 rounded ${
+                              displayScore.isShallow
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : displayScore.depthLabel === 'Deep Analysis'
+                                ? 'bg-blue-500/20 text-blue-400'
+                                : displayScore.depthLabel === 'Substantive'
+                                ? 'bg-green-500/20 text-green-400'
+                                : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {displayScore.depthLabel}
+                            </span>
+                          )}
                           <span className={`px-1.5 py-0.5 rounded ${
                             displayScore.isMeatScore
                               ? displayScore.score >= 250
@@ -213,6 +266,20 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
                     {/* Expanded details */}
                     {expandedIndex === index && (
                       <div className="ml-3 pl-3 border-l-2 border-primary/30 text-xs space-y-2 py-2">
+                        {/* Depth-Score breakdown */}
+                        {trend.depthScore !== undefined && (
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-muted-foreground">Depth-Score:</span>
+                            <span className={`font-medium ${trend.isShallow ? 'text-amber-400' : 'text-blue-400'}`}>
+                              {trend.depthScore}
+                            </span>
+                            {trend.isShallow && (
+                              <span className="text-amber-400">
+                                (Shallow - product update/patch)
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {/* Meat-Score breakdown */}
                         {trend.meatScore !== undefined && (
                           <div className="flex items-center gap-3 flex-wrap">
@@ -267,7 +334,7 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Topics ranked by Meat-Score (entity density, velocity, sentiment variance, source linkage). Recently used topics filtered out.
+        Topics ranked by combined score: 40% Meat-Score (popularity) + 60% Depth-Score (investigation-worthiness). Shallow topics (patches, updates) are penalized. Recently used topics filtered out.
       </p>
     </div>
   );

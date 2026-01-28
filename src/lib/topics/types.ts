@@ -7,7 +7,7 @@ export interface RawHeadline {
   title: string;
   url: string;
   source: string;
-  sourceTier: 1 | 2 | 3; // Quality tier
+  sourceTier: 0 | 1 | 2 | 3; // Quality tier: 0 = Deep analysis, 1 = Premium, 2 = Quality, 3 = General
   publishedAt: Date;
   description?: string;
   score?: number; // For HackerNews, Reddit
@@ -25,6 +25,18 @@ export interface MeatScoreComponents {
   meatScore: number;          // M = α(E × Vv) + β(Svar × L)
 }
 
+/**
+ * Depth Score Components
+ * Measures investigation-worthiness vs shallow popularity
+ */
+export interface DepthScoreComponents {
+  systemicImpact: number;     // Affects economy, policy, large populations (0-1)
+  controversy: number;        // Multiple stakeholders, debate (0-1)
+  emergingPattern: number;    // Signals broader trend, paradigm shift (0-1)
+  shallowPenalty: number;     // Penalty for product updates, patches (0-0.7)
+  depthScore: number;         // Combined score (0-1000 scale)
+}
+
 export interface TopicCluster {
   topic: string; // Normalized topic name
   keywords: string[]; // Keywords that formed this cluster
@@ -37,6 +49,7 @@ export interface TopicCluster {
   qualityScore: number; // Sum of source tier weights
   velocity: number; // Mentions per hour
   meatScore?: MeatScoreComponents; // GDELT-enriched scoring
+  depthScore?: DepthScoreComponents; // Investigation-worthiness scoring
 }
 
 export interface TrendingTopic {
@@ -51,11 +64,14 @@ export interface TrendingTopic {
   meatScore?: number;
   entityDensity?: number;
   sentimentVariance?: number;
+  // Depth Score fields (optional - investigation-worthiness)
+  depthScore?: number;
+  isShallow?: boolean;
 }
 
 export interface SourceConfig {
   name: string;
-  tier: 1 | 2 | 3;
+  tier: 0 | 1 | 2 | 3; // 0 = Deep analysis, 1 = Premium, 2 = Quality, 3 = General
   type: 'rss' | 'api' | 'hackernews' | 'reddit';
   url: string;
   categories: string[]; // Which categories this source is relevant for

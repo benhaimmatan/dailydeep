@@ -8,6 +8,10 @@ import { SourceConfig } from './types';
 // Category mapping to source configurations
 export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
   Geopolitics: [
+    // Tier 0 - Deep Analysis (investigation-focused)
+    { name: 'Foreign Affairs', tier: 0, type: 'rss', url: 'https://www.foreignaffairs.com/rss.xml', categories: ['Geopolitics'] },
+    { name: 'Foreign Policy', tier: 0, type: 'rss', url: 'https://foreignpolicy.com/feed/', categories: ['Geopolitics'] },
+    { name: 'The Diplomat', tier: 0, type: 'rss', url: 'https://thediplomat.com/feed/', categories: ['Geopolitics'] },
     // Tier 1 - Premium quality
     { name: 'Reuters World', tier: 1, type: 'rss', url: 'https://www.rss.reuters.com/news/topNews', categories: ['Geopolitics'] },
     { name: 'AP News', tier: 1, type: 'rss', url: 'https://rsshub.app/apnews/topics/world-news', categories: ['Geopolitics'] },
@@ -20,6 +24,10 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
   ],
 
   Economics: [
+    // Tier 0 - Deep Analysis (investigation-focused)
+    { name: 'The Economist', tier: 0, type: 'rss', url: 'https://www.economist.com/finance-and-economics/rss.xml', categories: ['Economics'] },
+    { name: 'Project Syndicate', tier: 0, type: 'rss', url: 'https://www.project-syndicate.org/rss', categories: ['Economics'] },
+    { name: 'Brookings', tier: 0, type: 'rss', url: 'https://www.brookings.edu/feed/', categories: ['Economics'] },
     // Tier 1 - Premium financial
     { name: 'Reuters Business', tier: 1, type: 'rss', url: 'https://www.rss.reuters.com/news/businessNews', categories: ['Economics'] },
     { name: 'FT', tier: 1, type: 'api', url: 'https://saurav.tech/NewsAPI/top-headlines/category/business/us.json', categories: ['Economics'] },
@@ -54,9 +62,12 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
   ],
 
   Society: [
+    // Tier 0 - Deep Analysis
+    { name: 'The Atlantic', tier: 0, type: 'rss', url: 'https://www.theatlantic.com/feed/all/', categories: ['Society'] },
+    { name: 'The New Yorker', tier: 0, type: 'rss', url: 'https://www.newyorker.com/feed/news', categories: ['Society'] },
     // Tier 1 - Quality analysis
     { name: 'Guardian', tier: 1, type: 'rss', url: 'https://www.theguardian.com/society/rss', categories: ['Society'] },
-    { name: 'Atlantic', tier: 1, type: 'api', url: 'https://saurav.tech/NewsAPI/top-headlines/category/general/us.json', categories: ['Society'] },
+    { name: 'Atlantic General', tier: 1, type: 'api', url: 'https://saurav.tech/NewsAPI/top-headlines/category/general/us.json', categories: ['Society'] },
     // Tier 2
     { name: 'BBC', tier: 2, type: 'rss', url: 'https://feeds.bbci.co.uk/news/rss.xml', categories: ['Society'] },
     { name: 'NPR', tier: 2, type: 'rss', url: 'https://feeds.npr.org/1001/rss.xml', categories: ['Society'] },
@@ -110,7 +121,8 @@ export function getSourcesForCategory(category: string): SourceConfig[] {
 /**
  * Quality tier weights for scoring
  */
-export const TIER_WEIGHTS = {
+export const TIER_WEIGHTS: Record<number, number> = {
+  0: 15, // Deep analysis sources (investigation-focused)
   1: 10, // Premium/authoritative sources
   2: 7,  // Quality mainstream
   3: 4,  // General/social

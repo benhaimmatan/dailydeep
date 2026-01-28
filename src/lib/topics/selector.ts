@@ -11,6 +11,7 @@ import { fetchAllSources } from './fetchers';
 import { clusterHeadlines, rankClusters } from './clusterer';
 import { queryGDELT, queryGDELTVelocity } from './gdelt';
 import { calculateMeatScore, calculateMeatScoreFallback } from './meat-score';
+import { calculateDepthScore, isShallowTopic } from './depth-score';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Minimum hotness score to be considered a valid trending topic
@@ -27,7 +28,25 @@ const topicCache: Map<string, { result: AggregationResult; timestamp: number }> 
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 /**
- * Enrich top clusters with GDELT data and calculate Meat-Score
+ * Calculate combined score for ranking
+ * Weights: 40% popularity (meat), 60% depth
+ */
+function calculateCombinedScore(cluster: TopicCluster): number {
+  const meatScore = cluster.meatScore?.meatScore ?? 0;
+  const depthScore = cluster.depthScore?.depthScore ?? 0;
+  const shallowPenalty = cluster.depthScore?.shallowPenalty ?? 0;
+
+  // Base combined score: 40% meat (popularity) + 60% depth (substance)
+  const baseScore = 0.4 * meatScore + 0.6 * depthScore;
+
+  // Apply shallow penalty (reduces score by 50-70% for shallow topics)
+  const finalScore = baseScore * (1 - shallowPenalty);
+
+  return Math.round(finalScore);
+}
+
+/**
+ * Enrich top clusters with GDELT data, calculate Meat-Score and Depth-Score
  * Only enriches top N clusters to minimize API calls
  */
 async function enrichWithGDELT(
@@ -49,9 +68,16 @@ async function enrichWithGDELT(
 
       if (searchKeywords.length === 0) {
         console.log(`  [${cluster.topic.slice(0, 30)}...] No keywords, using fallback`);
+        const meatScore = calculateMeatScoreFallback(cluster);
+        const depthScore = calculateDepthScore(
+          cluster.topic,
+          cluster.headlines.map(h => h.title),
+          meatScore.sentimentVariance
+        );
         return {
           ...cluster,
-          meatScore: calculateMeatScoreFallback(cluster),
+          meatScore,
+          depthScore,
         };
       }
 
@@ -66,20 +92,36 @@ async function enrichWithGDELT(
         ? calculateMeatScore(cluster, gdeltArticles, velocityData)
         : calculateMeatScoreFallback(cluster);
 
+      // Calculate Depth-Score
+      const depthScore = calculateDepthScore(
+        cluster.topic,
+        cluster.headlines.map(h => h.title),
+        meatScore.sentimentVariance
+      );
+
+      const shallowFlag = isShallowTopic(depthScore) ? ' [SHALLOW]' : '';
       console.log(
-        `  [${cluster.topic.slice(0, 30)}...] Meat-Score: ${meatScore.meatScore} ` +
+        `  [${cluster.topic.slice(0, 30)}...] Meat:${meatScore.meatScore} Depth:${depthScore.depthScore}${shallowFlag} ` +
         `(E:${meatScore.entityDensity} V:${meatScore.velocity} S:${meatScore.sentimentVariance} L:${meatScore.linkage})`
       );
 
       return {
         ...cluster,
         meatScore,
+        depthScore,
       };
     } catch {
       console.error(`  [${cluster.topic.slice(0, 30)}...] GDELT error, using fallback`);
+      const meatScore = calculateMeatScoreFallback(cluster);
+      const depthScore = calculateDepthScore(
+        cluster.topic,
+        cluster.headlines.map(h => h.title),
+        meatScore.sentimentVariance
+      );
       return {
         ...cluster,
-        meatScore: calculateMeatScoreFallback(cluster),
+        meatScore,
+        depthScore,
       };
     }
   });
@@ -89,18 +131,25 @@ async function enrichWithGDELT(
 
   // Add remaining clusters with fallback scores
   for (const cluster of remainingClusters) {
+    const meatScore = calculateMeatScoreFallback(cluster);
+    const depthScore = calculateDepthScore(
+      cluster.topic,
+      cluster.headlines.map(h => h.title),
+      meatScore.sentimentVariance
+    );
     enrichedClusters.push({
       ...cluster,
-      meatScore: calculateMeatScoreFallback(cluster),
+      meatScore,
+      depthScore,
     });
   }
 
-  // Re-sort by Meat-Score (primary) with hotness as tiebreaker
+  // Re-sort by combined score (40% meat + 60% depth, with shallow penalty)
   enrichedClusters.sort((a, b) => {
-    const meatA = a.meatScore?.meatScore ?? 0;
-    const meatB = b.meatScore?.meatScore ?? 0;
+    const combinedA = calculateCombinedScore(a);
+    const combinedB = calculateCombinedScore(b);
 
-    if (meatA !== meatB) return meatB - meatA;
+    if (combinedA !== combinedB) return combinedB - combinedA;
     return b.hotnessScore - a.hotnessScore;
   });
 
@@ -252,11 +301,14 @@ export async function aggregateTopics(
     c => !isTopicUsed(c.topic, usedTopics)
   );
 
-  console.log(`\n🏆 Top 5 trending topics (by Meat-Score):`);
+  console.log(`\n🏆 Top 5 trending topics (by Combined Score: 40% Meat + 60% Depth):`);
   availableClusters.slice(0, 5).forEach((c, i) => {
-    const meatEmoji = c.meatScore && c.meatScore.meatScore >= 150 ? '🥩' : '📰';
+    const combinedScore = calculateCombinedScore(c);
+    const isShallow = c.depthScore && isShallowTopic(c.depthScore);
+    const depthEmoji = isShallow ? '⚠️' : c.depthScore && c.depthScore.depthScore >= 300 ? '🔬' : '📰';
+    const shallowLabel = isShallow ? ' [SHALLOW]' : '';
     console.log(
-      `  ${i + 1}. ${meatEmoji} [M:${c.meatScore?.meatScore ?? 0} H:${c.hotnessScore}] ${c.topic} (${c.sourceCount} sources)`
+      `  ${i + 1}. ${depthEmoji} [C:${combinedScore} M:${c.meatScore?.meatScore ?? 0} D:${c.depthScore?.depthScore ?? 0}] ${c.topic} (${c.sourceCount} sources)${shallowLabel}`
     );
   });
 
@@ -269,6 +321,8 @@ export async function aggregateTopics(
     (bestCluster?.hotnessScore ?? 0) >= MINIMUM_HOTNESS_THRESHOLD;
 
   if (bestCluster && meetsThreshold) {
+    const combinedScore = calculateCombinedScore(bestCluster);
+    const shallow = bestCluster.depthScore ? isShallowTopic(bestCluster.depthScore) : false;
     selectedTopic = {
       topic: bestCluster.topic,
       hotnessScore: bestCluster.hotnessScore,
@@ -283,10 +337,13 @@ export async function aggregateTopics(
       meatScore: bestCluster.meatScore?.meatScore,
       entityDensity: bestCluster.meatScore?.entityDensity,
       sentimentVariance: bestCluster.meatScore?.sentimentVariance,
+      // Depth-Score fields
+      depthScore: bestCluster.depthScore?.depthScore,
+      isShallow: shallow,
     };
     console.log(
       `\n✅ Selected: "${selectedTopic.topic}" ` +
-      `(Meat-Score: ${selectedTopic.meatScore ?? 'N/A'}, Hotness: ${selectedTopic.hotnessScore})`
+      `(Combined: ${combinedScore}, Meat: ${selectedTopic.meatScore ?? 'N/A'}, Depth: ${selectedTopic.depthScore ?? 'N/A'})`
     );
   } else {
     // Use fallback
@@ -347,7 +404,7 @@ export async function getTrendingTopicsForAdmin(
   // Get used topics
   const usedTopics = await getUsedTopics(supabase);
 
-  // Convert clusters to trending topics (with Meat-Score data)
+  // Convert clusters to trending topics (with Meat-Score and Depth-Score data)
   return result.clusters
     .filter(c => !isTopicUsed(c.topic, usedTopics))
     .slice(0, 10)
@@ -365,6 +422,9 @@ export async function getTrendingTopicsForAdmin(
       meatScore: cluster.meatScore?.meatScore,
       entityDensity: cluster.meatScore?.entityDensity,
       sentimentVariance: cluster.meatScore?.sentimentVariance,
+      // Depth-Score fields
+      depthScore: cluster.depthScore?.depthScore,
+      isShallow: cluster.depthScore ? isShallowTopic(cluster.depthScore) : false,
     }));
 }
 

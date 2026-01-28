@@ -31,6 +31,10 @@ export async function GET(request: Request) {
       sources: t.sources,
       sampleHeadlines: t.sampleHeadlines,
       firstSeenHoursAgo: t.firstSeenHoursAgo,
+      // Meat-Score fields
+      meatScore: t.meatScore,
+      entityDensity: t.entityDensity,
+      sentimentVariance: t.sentimentVariance,
     }));
 
     return NextResponse.json({

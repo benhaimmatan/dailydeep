@@ -9,6 +9,10 @@ interface TrendingTopic {
   sources: string[];
   sampleHeadlines: string[];
   firstSeenHoursAgo: number;
+  // Meat-Score fields
+  meatScore?: number;
+  entityDensity?: number;
+  sentimentVariance?: number;
 }
 
 interface Props {
@@ -19,10 +23,10 @@ interface Props {
 }
 
 function getHotnessEmoji(score: number): string {
-  if (score >= 500) return '🔥🔥🔥';
-  if (score >= 300) return '🔥🔥';
-  if (score >= 150) return '🔥';
-  return '📰';
+  if (score >= 500) return '\uD83D\uDD25\uD83D\uDD25\uD83D\uDD25';
+  if (score >= 300) return '\uD83D\uDD25\uD83D\uDD25';
+  if (score >= 150) return '\uD83D\uDD25';
+  return '\uD83D\uDCF0';
 }
 
 function getHotnessLabel(score: number): string {
@@ -30,6 +34,41 @@ function getHotnessLabel(score: number): string {
   if (score >= 300) return 'Hot';
   if (score >= 150) return 'Trending';
   return 'Recent';
+}
+
+function getMeatScoreEmoji(score: number | undefined): string {
+  if (!score) return '';
+  if (score >= 400) return '\uD83E\uDD69\uD83E\uDD69\uD83E\uDD69';
+  if (score >= 250) return '\uD83E\uDD69\uD83E\uDD69';
+  if (score >= 150) return '\uD83E\uDD69';
+  return '';
+}
+
+function getMeatScoreLabel(score: number | undefined): string {
+  if (!score) return '';
+  if (score >= 400) return 'Prime Cut';
+  if (score >= 250) return 'Choice';
+  if (score >= 150) return 'Select';
+  return 'Standard';
+}
+
+function getDisplayScore(trend: TrendingTopic): { score: number; emoji: string; label: string; isMeatScore: boolean } {
+  // Prefer Meat-Score when available and meaningful
+  if (trend.meatScore && trend.meatScore >= 100) {
+    return {
+      score: trend.meatScore,
+      emoji: getMeatScoreEmoji(trend.meatScore) || getHotnessEmoji(trend.hotnessScore),
+      label: getMeatScoreLabel(trend.meatScore) || getHotnessLabel(trend.hotnessScore),
+      isMeatScore: true,
+    };
+  }
+  // Fallback to hotness score
+  return {
+    score: trend.hotnessScore,
+    emoji: getHotnessEmoji(trend.hotnessScore),
+    label: getHotnessLabel(trend.hotnessScore),
+    isMeatScore: false,
+  };
 }
 
 export function TopicSelector({ categoryName, value, onChange, disabled }: Props) {
@@ -113,7 +152,9 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
 
             {trends.length > 0 && (
               <div className="space-y-2">
-                {trends.slice(0, 7).map((trend, index) => (
+                {trends.slice(0, 7).map((trend, index) => {
+                  const displayScore = getDisplayScore(trend);
+                  return (
                   <div key={index} className="space-y-1">
                     <button
                       type="button"
@@ -129,18 +170,22 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium flex items-center gap-2">
-                          <span>{getHotnessEmoji(trend.hotnessScore)}</span>
+                          <span>{displayScore.emoji}</span>
                           <span>{trend.title}</span>
                         </span>
                         <div className="flex items-center gap-2 text-xs">
                           <span className={`px-1.5 py-0.5 rounded ${
-                            trend.hotnessScore >= 300
+                            displayScore.isMeatScore
+                              ? displayScore.score >= 250
+                                ? 'bg-orange-500/20 text-orange-400'
+                                : 'bg-amber-500/20 text-amber-400'
+                              : displayScore.score >= 300
                               ? 'bg-red-500/20 text-red-400'
-                              : trend.hotnessScore >= 150
+                              : displayScore.score >= 150
                               ? 'bg-amber-500/20 text-amber-400'
                               : 'bg-muted text-muted-foreground'
                           }`}>
-                            {getHotnessLabel(trend.hotnessScore)}
+                            {displayScore.label}
                           </span>
                           <span className="text-muted-foreground">
                             {trend.traffic}
@@ -168,6 +213,23 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
                     {/* Expanded details */}
                     {expandedIndex === index && (
                       <div className="ml-3 pl-3 border-l-2 border-primary/30 text-xs space-y-2 py-2">
+                        {/* Meat-Score breakdown */}
+                        {trend.meatScore !== undefined && (
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-muted-foreground">Meat-Score:</span>
+                            <span className="font-medium text-orange-400">{trend.meatScore}</span>
+                            {trend.entityDensity !== undefined && (
+                              <span className="text-muted-foreground">
+                                Entity: <span className="text-foreground">{trend.entityDensity}</span>
+                              </span>
+                            )}
+                            {trend.sentimentVariance !== undefined && (
+                              <span className="text-muted-foreground">
+                                Sentiment Var: <span className="text-foreground">{trend.sentimentVariance}</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div>
                           <span className="text-muted-foreground">Sources: </span>
                           <span className="text-foreground">
@@ -190,7 +252,8 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
                       </div>
                     )}
                   </div>
-                ))}
+                );
+                })}
 
                 {trends.length > 7 && (
                   <p className="text-xs text-muted-foreground text-center mt-2">
@@ -204,7 +267,7 @@ export function TopicSelector({ categoryName, value, onChange, disabled }: Props
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Topics ranked by hotness score (source diversity × quality × recency). Recently used topics filtered out.
+        Topics ranked by Meat-Score (entity density, velocity, sentiment variance, source linkage). Recently used topics filtered out.
       </p>
     </div>
   );

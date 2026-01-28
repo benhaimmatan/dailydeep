@@ -2,20 +2,107 @@
  * Topic Selector
  * Main entry point for automated topic selection
  * Aggregates sources, clusters headlines, scores topics, and auto-selects the best one
+ * Now enhanced with GDELT enrichment and Meat-Score ranking
  */
 
-import { TrendingTopic, AggregationResult } from './types';
+import { TrendingTopic, AggregationResult, TopicCluster } from './types';
 import { getSourcesForCategory } from './sources';
 import { fetchAllSources } from './fetchers';
 import { clusterHeadlines, rankClusters } from './clusterer';
+import { queryGDELT, queryGDELTVelocity } from './gdelt';
+import { calculateMeatScore, calculateMeatScoreFallback } from './meat-score';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Minimum hotness score to be considered a valid trending topic
 const MINIMUM_HOTNESS_THRESHOLD = 150;
 
+// Minimum Meat-Score to be considered (when GDELT data is available)
+const MINIMUM_MEAT_SCORE_THRESHOLD = 100;
+
 // Cache for topic aggregation (avoid hammering sources)
 const topicCache: Map<string, { result: AggregationResult; timestamp: number }> = new Map();
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+/**
+ * Enrich top clusters with GDELT data and calculate Meat-Score
+ * Only enriches top N clusters to minimize API calls
+ */
+async function enrichWithGDELT(
+  clusters: TopicCluster[],
+  maxEnrich: number = 5
+): Promise<TopicCluster[]> {
+  console.log(`\n🥩 Enriching top ${maxEnrich} clusters with GDELT data...`);
+
+  const enrichedClusters: TopicCluster[] = [];
+
+  // Process top clusters in parallel (batch of maxEnrich)
+  const topClusters = clusters.slice(0, maxEnrich);
+  const remainingClusters = clusters.slice(maxEnrich);
+
+  const enrichmentPromises = topClusters.map(async (cluster) => {
+    try {
+      // Extract top keywords for GDELT query
+      const searchKeywords = cluster.keywords.slice(0, 3);
+
+      if (searchKeywords.length === 0) {
+        console.log(`  [${cluster.topic.slice(0, 30)}...] No keywords, using fallback`);
+        return {
+          ...cluster,
+          meatScore: calculateMeatScoreFallback(cluster),
+        };
+      }
+
+      // Query GDELT for articles and velocity
+      const [gdeltArticles, velocityData] = await Promise.all([
+        queryGDELT(searchKeywords, '24h'),
+        queryGDELTVelocity(searchKeywords),
+      ]);
+
+      // Calculate Meat-Score
+      const meatScore = gdeltArticles.length > 0
+        ? calculateMeatScore(cluster, gdeltArticles, velocityData)
+        : calculateMeatScoreFallback(cluster);
+
+      console.log(
+        `  [${cluster.topic.slice(0, 30)}...] Meat-Score: ${meatScore.meatScore} ` +
+        `(E:${meatScore.entityDensity} V:${meatScore.velocity} S:${meatScore.sentimentVariance} L:${meatScore.linkage})`
+      );
+
+      return {
+        ...cluster,
+        meatScore,
+      };
+    } catch {
+      console.error(`  [${cluster.topic.slice(0, 30)}...] GDELT error, using fallback`);
+      return {
+        ...cluster,
+        meatScore: calculateMeatScoreFallback(cluster),
+      };
+    }
+  });
+
+  const enrichedTop = await Promise.all(enrichmentPromises);
+  enrichedClusters.push(...enrichedTop);
+
+  // Add remaining clusters with fallback scores
+  for (const cluster of remainingClusters) {
+    enrichedClusters.push({
+      ...cluster,
+      meatScore: calculateMeatScoreFallback(cluster),
+    });
+  }
+
+  // Re-sort by Meat-Score (primary) with hotness as tiebreaker
+  enrichedClusters.sort((a, b) => {
+    const meatA = a.meatScore?.meatScore ?? 0;
+    const meatB = b.meatScore?.meatScore ?? 0;
+
+    if (meatA !== meatB) return meatB - meatA;
+    return b.hotnessScore - a.hotnessScore;
+  });
+
+  return enrichedClusters;
+}
 
 /**
  * Get topics used in the last N days (to avoid repetition)
@@ -142,32 +229,42 @@ export async function aggregateTopics(
   const clusters = clusterHeadlines(headlines);
   console.log(`Formed ${clusters.length} topic clusters`);
 
-  // 4. Score and rank clusters
+  // 4. Score and rank clusters (initial hotness scoring)
   console.log('\n📈 Scoring clusters...');
   const rankedClusters = rankClusters(clusters);
 
-  // 5. Get used topics (if supabase provided)
+  // 5. Enrich with GDELT and calculate Meat-Score
+  const enrichedClusters = await enrichWithGDELT(rankedClusters, 5);
+
+  // 6. Get used topics (if supabase provided)
   let usedTopics: string[] = [];
   if (supabase) {
     usedTopics = await getUsedTopics(supabase);
     console.log(`Found ${usedTopics.length} recently used topics`);
   }
 
-  // 6. Filter out used topics and select best
-  const availableClusters = rankedClusters.filter(
+  // 7. Filter out used topics and select best
+  const availableClusters = enrichedClusters.filter(
     c => !isTopicUsed(c.topic, usedTopics)
   );
 
-  console.log(`\n🏆 Top 5 trending topics:`);
+  console.log(`\n🏆 Top 5 trending topics (by Meat-Score):`);
   availableClusters.slice(0, 5).forEach((c, i) => {
-    console.log(`  ${i + 1}. [${c.hotnessScore}] ${c.topic} (${c.sourceCount} sources)`);
+    const meatEmoji = c.meatScore && c.meatScore.meatScore >= 150 ? '🥩' : '📰';
+    console.log(
+      `  ${i + 1}. ${meatEmoji} [M:${c.meatScore?.meatScore ?? 0} H:${c.hotnessScore}] ${c.topic} (${c.sourceCount} sources)`
+    );
   });
 
-  // 7. Auto-select the best topic
+  // 8. Auto-select the best topic (prefer Meat-Score, fallback to hotness)
   let selectedTopic: TrendingTopic | null = null;
 
   const bestCluster = availableClusters[0];
-  if (bestCluster && bestCluster.hotnessScore >= MINIMUM_HOTNESS_THRESHOLD) {
+  const meetsThreshold =
+    (bestCluster?.meatScore?.meatScore ?? 0) >= MINIMUM_MEAT_SCORE_THRESHOLD ||
+    (bestCluster?.hotnessScore ?? 0) >= MINIMUM_HOTNESS_THRESHOLD;
+
+  if (bestCluster && meetsThreshold) {
     selectedTopic = {
       topic: bestCluster.topic,
       hotnessScore: bestCluster.hotnessScore,
@@ -178,8 +275,15 @@ export async function aggregateTopics(
       ),
       sampleHeadlines: bestCluster.headlines.slice(0, 3).map(h => h.title),
       category,
+      // Meat-Score fields
+      meatScore: bestCluster.meatScore?.meatScore,
+      entityDensity: bestCluster.meatScore?.entityDensity,
+      sentimentVariance: bestCluster.meatScore?.sentimentVariance,
     };
-    console.log(`\n✅ Selected: "${selectedTopic.topic}" (score: ${selectedTopic.hotnessScore})`);
+    console.log(
+      `\n✅ Selected: "${selectedTopic.topic}" ` +
+      `(Meat-Score: ${selectedTopic.meatScore ?? 'N/A'}, Hotness: ${selectedTopic.hotnessScore})`
+    );
   } else {
     // Use fallback
     const fallbackTopic = generateFallbackTopic(category);
@@ -199,7 +303,7 @@ export async function aggregateTopics(
     category,
     fetchedAt: new Date(),
     totalHeadlines: headlines.length,
-    clusters: rankedClusters.slice(0, 10), // Keep top 10 for reference
+    clusters: enrichedClusters.slice(0, 10), // Keep top 10 for reference (now with Meat-Score)
     selectedTopic,
   };
 
@@ -239,7 +343,7 @@ export async function getTrendingTopicsForAdmin(
   // Get used topics
   const usedTopics = await getUsedTopics(supabase);
 
-  // Convert clusters to trending topics
+  // Convert clusters to trending topics (with Meat-Score data)
   return result.clusters
     .filter(c => !isTopicUsed(c.topic, usedTopics))
     .slice(0, 10)
@@ -253,6 +357,10 @@ export async function getTrendingTopicsForAdmin(
       ),
       sampleHeadlines: cluster.headlines.slice(0, 3).map(h => h.title),
       category,
+      // Meat-Score fields
+      meatScore: cluster.meatScore?.meatScore,
+      entityDensity: cluster.meatScore?.entityDensity,
+      sentimentVariance: cluster.meatScore?.sentimentVariance,
     }));
 }
 

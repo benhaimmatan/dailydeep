@@ -159,8 +159,10 @@ function generateTopicName(cluster: TopicCluster): string {
 
 /**
  * Cluster headlines into topic groups
+ * @param headlines - Raw headlines to cluster
+ * @param minSourceCount - Minimum sources required (default 2, use 1 for slow-news categories)
  */
-export function clusterHeadlines(headlines: RawHeadline[]): TopicCluster[] {
+export function clusterHeadlines(headlines: RawHeadline[], minSourceCount: number = 2): TopicCluster[] {
   const clusters: TopicCluster[] = [];
 
   // Filter to last 72 hours only
@@ -219,7 +221,7 @@ export function clusterHeadlines(headlines: RawHeadline[]): TopicCluster[] {
 
   // Refine topic names and filter small clusters
   const significantClusters = clusters
-    .filter(c => c.sourceCount >= 2) // Require at least 2 different sources
+    .filter(c => c.sourceCount >= minSourceCount)
     .map(cluster => ({
       ...cluster,
       topic: generateTopicName(cluster),

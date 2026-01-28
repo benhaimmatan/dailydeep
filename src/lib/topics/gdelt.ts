@@ -55,8 +55,11 @@ function buildSearchQuery(keywords: string[]): string {
     return cleaned;
   });
 
-  // Join with OR for broader matching
-  return cleanedKeywords.join(' OR ');
+  // GDELT requires OR queries to be wrapped in parentheses
+  if (cleanedKeywords.length > 1) {
+    return `(${cleanedKeywords.join(' OR ')})`;
+  }
+  return cleanedKeywords[0] || '';
 }
 
 /**

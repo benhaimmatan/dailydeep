@@ -19,6 +19,9 @@ const MINIMUM_HOTNESS_THRESHOLD = 150;
 // Minimum Meat-Score to be considered (when GDELT data is available)
 const MINIMUM_MEAT_SCORE_THRESHOLD = 100;
 
+// Categories that allow single-source clusters (slow news cycles)
+const SINGLE_SOURCE_CATEGORIES = ['Climate', 'Science'];
+
 // Cache for topic aggregation (avoid hammering sources)
 const topicCache: Map<string, { result: AggregationResult; timestamp: number }> = new Map();
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
@@ -226,8 +229,9 @@ export async function aggregateTopics(
 
   // 3. Cluster similar headlines
   console.log('\n🔗 Clustering headlines...');
-  const clusters = clusterHeadlines(headlines);
-  console.log(`Formed ${clusters.length} topic clusters`);
+  const minSourceCount = SINGLE_SOURCE_CATEGORIES.includes(category) ? 1 : 2;
+  const clusters = clusterHeadlines(headlines, minSourceCount);
+  console.log(`Formed ${clusters.length} topic clusters (min ${minSourceCount} source${minSourceCount > 1 ? 's' : ''})`);
 
   // 4. Score and rank clusters (initial hotness scoring)
   console.log('\n📈 Scoring clusters...');

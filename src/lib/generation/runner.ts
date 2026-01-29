@@ -91,14 +91,34 @@ export async function runGeneration(
       })
       .eq('id', jobId);
   } catch (error: unknown) {
-    // Mark job as failed
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // Mark job as failed with user-friendly error message
+    const rawError = error instanceof Error ? error.message : 'Unknown error';
+
+    // Create user-friendly error messages
+    let userMessage = 'Generation failed';
+    let errorDetails = rawError;
+
+    if (rawError.includes('overloaded') || rawError.includes('503')) {
+      userMessage = 'Gemini AI is currently overloaded. Please try again in a few minutes.';
+      errorDetails = 'Service temporarily unavailable after multiple retry attempts.';
+    } else if (rawError.includes('rate limit') || rawError.includes('429')) {
+      userMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
+      errorDetails = 'Too many requests to the AI service.';
+    } else if (rawError.includes('quota')) {
+      userMessage = 'API quota exceeded. Please contact support.';
+      errorDetails = 'Gemini API quota limit reached.';
+    } else if (rawError.includes('too short')) {
+      userMessage = 'Generated content was too short. Please try again.';
+    } else if (rawError.includes('Insufficient sources')) {
+      userMessage = 'Not enough sources found. Please try a different topic.';
+    }
+
     await supabase
       .from('generation_jobs')
       .update({
         status: 'failed',
-        error: errorMessage,
-        progress: 'Generation failed',
+        error: errorDetails,
+        progress: userMessage,
         completed_at: new Date().toISOString(),
       })
       .eq('id', jobId);

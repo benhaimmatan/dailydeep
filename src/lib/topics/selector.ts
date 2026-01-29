@@ -479,8 +479,14 @@ export async function aggregateTopics(
   // 3. Cluster similar headlines
   console.log('\n🔗 Clustering headlines...');
   // All categories now require 2+ sources for validation (overlapping mainstream sources added)
-  const clusters = clusterHeadlines(headlines, 2);
-  console.log(`Formed ${clusters.length} topic clusters (min 2 sources)`);
+  // Science/Climate need lower threshold (0.15) due to specialized vocabulary
+  const CLUSTERING_THRESHOLDS: Record<string, number> = {
+    Science: 0.15,
+    Climate: 0.15,
+  };
+  const clusteringThreshold = CLUSTERING_THRESHOLDS[category] ?? 0.20;
+  const clusters = clusterHeadlines(headlines, 2, clusteringThreshold);
+  console.log(`Formed ${clusters.length} topic clusters (min 2 sources, threshold ${clusteringThreshold})`);
 
   // 4. Score and rank clusters (initial hotness scoring)
   console.log('\n📈 Scoring clusters...');

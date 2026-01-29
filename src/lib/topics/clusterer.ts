@@ -161,8 +161,13 @@ function generateTopicName(cluster: TopicCluster): string {
  * Cluster headlines into topic groups
  * @param headlines - Raw headlines to cluster
  * @param minSourceCount - Minimum sources required (default 2, use 1 for slow-news categories)
+ * @param threshold - Similarity threshold for clustering (default 0.20, use 0.15 for Science/Climate)
  */
-export function clusterHeadlines(headlines: RawHeadline[], minSourceCount: number = 2): TopicCluster[] {
+export function clusterHeadlines(
+  headlines: RawHeadline[],
+  minSourceCount: number = 2,
+  threshold: number = 0.20
+): TopicCluster[] {
   const clusters: TopicCluster[] = [];
 
   // Filter to last 72 hours only
@@ -183,7 +188,7 @@ export function clusterHeadlines(headlines: RawHeadline[], minSourceCount: numbe
 
     if (keywords.length < 2) continue; // Skip headlines with no meaningful keywords
 
-    const matchingCluster = findMatchingCluster(headline, keywords, clusters);
+    const matchingCluster = findMatchingCluster(headline, keywords, clusters, threshold);
 
     if (matchingCluster) {
       // Add to existing cluster

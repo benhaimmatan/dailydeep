@@ -93,7 +93,7 @@ function findMatchingCluster(
   headline: RawHeadline,
   keywords: string[],
   clusters: TopicCluster[],
-  threshold = 0.25 // Lower threshold to catch related stories
+  threshold = 0.20 // Lowered from 0.25 to form more clusters from diverse headlines
 ): TopicCluster | null {
   let bestMatch: TopicCluster | null = null;
   let bestScore = 0;

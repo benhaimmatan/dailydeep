@@ -45,7 +45,9 @@ const VIRTUAL_SEED_TIER_0 = 10; // n=10 virtual samples
 const VIRTUAL_SEED_WINDOW_HOURS = 6; // Only for first 6 hours
 
 // Deep Research threshold
-const DEEP_RESEARCH_THRESHOLD = 850;
+// Deep Research threshold - triggers entity-based research plan for Gemini
+// Lowered from 850 to 400 based on observed score ranges (13-136 typical)
+const DEEP_RESEARCH_THRESHOLD = 400;
 
 /**
  * Wilson score lower bound approximation for confidence adjustment
@@ -89,14 +91,16 @@ function calculateCombinedScore(cluster: TopicCluster, category: string = 'Techn
   const depthScore = cluster.depthScore?.depthScore ?? 0;
   const shallowPenalty = cluster.depthScore?.shallowPenalty ?? 0;
 
-  // Calculate SemanticMeat from topic and headlines
-  const allText = [cluster.topic, ...cluster.headlines.map(h => h.title)].join(' ');
-  const semanticMeat = calculateSemanticMeat(allText);
+  // Calculate SemanticMeat using MAX of individual headlines (not combined)
+  // Combined text dilutes proper noun ratio; max preserves signal strength
+  const headlineTexts = [cluster.topic, ...cluster.headlines.map(h => h.title)];
+  const semanticMeatScores = headlineTexts.map(text => calculateSemanticMeat(text).semanticMeat);
+  const maxSemanticMeat = Math.max(...semanticMeatScores);
 
   // 1. Base combined score: 0.4 * SemanticMeat + 0.6 * EntityDepth
   // SemanticMeat provides the "meat" (proper nouns + tech terms ratio)
   // depthScore provides the "depth" (systemic impact, controversy, patterns)
-  const baseScore = 0.4 * semanticMeat.semanticMeat + 0.6 * depthScore;
+  const baseScore = 0.4 * maxSemanticMeat + 0.6 * depthScore;
 
   // Boost with meatScore if available (GDELT enrichment)
   const gdeltBoost = meatScore > 0 ? (meatScore / 1000) * 0.1 : 0; // Up to 10% boost

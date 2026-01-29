@@ -114,6 +114,25 @@ export async function generateReport(
       }
 
       const parsed = JSON.parse(text);
+
+      // Truncate fields that Gemini may have exceeded limits on
+      // Gemini doesn't enforce character limits from JSON schema
+      if (parsed.summary && parsed.summary.length > 500) {
+        parsed.summary = parsed.summary.slice(0, 497) + '...';
+      }
+      if (parsed.seo_title && parsed.seo_title.length > 60) {
+        parsed.seo_title = parsed.seo_title.slice(0, 57) + '...';
+      }
+      if (parsed.seo_description && parsed.seo_description.length > 160) {
+        parsed.seo_description = parsed.seo_description.slice(0, 157) + '...';
+      }
+      if (parsed.subtitle && parsed.subtitle.length > 200) {
+        parsed.subtitle = parsed.subtitle.slice(0, 197) + '...';
+      }
+      if (parsed.title && parsed.title.length > 100) {
+        parsed.title = parsed.title.slice(0, 97) + '...';
+      }
+
       const validated = ReportSchema.parse(parsed);
 
       // Additional quality checks

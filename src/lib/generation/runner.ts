@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { generateReport } from '@/lib/gemini/client';
+import { generateReport, GenerationError } from '@/lib/gemini/client';
 
 /**
  * Run the full generation workflow: AI generation -> validation -> save to database
@@ -23,12 +23,15 @@ export async function runGeneration(
       .eq('id', jobId);
 
     // Generate report with progress updates
-    const report = await generateReport(topic, categoryName, async (message) => {
+    const { report, rawResponse } = await generateReport(topic, categoryName, async (message) => {
       await supabase
         .from('generation_jobs')
         .update({ progress: message })
         .eq('id', jobId);
     });
+
+    // Log raw response length for debugging
+    console.log(`[Generation ${jobId}] Raw response length: ${rawResponse.length} chars`);
 
     // Update status to validating
     await supabase
@@ -94,19 +97,31 @@ export async function runGeneration(
     // Mark job as failed with user-friendly error message
     const rawError = error instanceof Error ? error.message : 'Unknown error';
 
+    // Check if we have raw response data from GenerationError
+    let debugInfo = '';
+    if (error instanceof GenerationError) {
+      console.log(`[Generation ${jobId}] FAILED - Raw response preserved`);
+      console.log(`[Generation ${jobId}] Field lengths:`, JSON.stringify(error.fieldLengths));
+      if (error.rawResponse) {
+        // Log first 2000 chars of raw response for debugging
+        console.log(`[Generation ${jobId}] Raw response (first 2000 chars):`, error.rawResponse.slice(0, 2000));
+        debugInfo = `\n\nField lengths: ${JSON.stringify(error.fieldLengths)}\n\nRaw response (first 500 chars): ${error.rawResponse.slice(0, 500)}`;
+      }
+    }
+
     // Create user-friendly error messages
     let userMessage = 'Generation failed';
-    let errorDetails = rawError;
+    let errorDetails = rawError + debugInfo;
 
     if (rawError.includes('overloaded') || rawError.includes('503')) {
       userMessage = 'Gemini AI is currently overloaded. Please try again in a few minutes.';
-      errorDetails = 'Service temporarily unavailable after multiple retry attempts.';
+      errorDetails = 'Service temporarily unavailable after multiple retry attempts.' + debugInfo;
     } else if (rawError.includes('rate limit') || rawError.includes('429')) {
       userMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
-      errorDetails = 'Too many requests to the AI service.';
+      errorDetails = 'Too many requests to the AI service.' + debugInfo;
     } else if (rawError.includes('quota')) {
       userMessage = 'API quota exceeded. Please contact support.';
-      errorDetails = 'Gemini API quota limit reached.';
+      errorDetails = 'Gemini API quota limit reached.' + debugInfo;
     } else if (rawError.includes('too short')) {
       userMessage = 'Generated content was too short. Please try again.';
     } else if (rawError.includes('Insufficient sources')) {

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 
 /**
  * Source citation schema
@@ -54,8 +53,61 @@ export const ReportSchema = z.object({
 export type ReportOutput = z.infer<typeof ReportSchema>;
 
 /**
- * JSON Schema for Gemini structured output
- * Type assertion needed due to zod v4 compatibility with zod-to-json-schema
+ * Flat JSON Schema for Gemini structured output
+ * Gemini doesn't support $ref or definitions, so we define it manually
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const reportJsonSchema = zodToJsonSchema(ReportSchema as any, 'ReportSchema');
+export const reportJsonSchema = {
+  type: 'object',
+  properties: {
+    title: {
+      type: 'string',
+      description: 'Compelling headline for the report, 10-100 characters',
+    },
+    subtitle: {
+      type: 'string',
+      description: 'Supporting subheadline providing context, 20-200 characters',
+    },
+    summary: {
+      type: 'string',
+      description: 'Executive summary in 2-3 sentences, 100-500 characters',
+    },
+    content: {
+      type: 'string',
+      description: 'Full markdown report content. Must be 3000+ words with headers, tables, data points, and analysis.',
+    },
+    sources: {
+      type: 'array',
+      description: 'At least 5 credible sources with URLs',
+      items: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Name of the source publication or organization',
+          },
+          url: {
+            type: 'string',
+            description: 'URL to the source',
+          },
+        },
+        required: ['name', 'url'],
+      },
+    },
+    seo_title: {
+      type: 'string',
+      description: 'SEO-optimized title, max 60 characters',
+    },
+    seo_description: {
+      type: 'string',
+      description: 'SEO meta description, max 160 characters',
+    },
+    seo_keywords: {
+      type: 'array',
+      description: '5-10 relevant SEO keywords',
+      items: {
+        type: 'string',
+      },
+    },
+  },
+  required: ['title', 'subtitle', 'summary', 'content', 'sources', 'seo_title', 'seo_description', 'seo_keywords'],
+};

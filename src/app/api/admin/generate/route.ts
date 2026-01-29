@@ -3,45 +3,72 @@ import { runGeneration } from '@/lib/generation/runner';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  // Admin check
-  if (!user || user.email !== process.env.ADMIN_EMAIL) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError) {
+      console.error('[generate] Auth error:', authError);
+      return NextResponse.json({ error: 'Auth failed', details: authError.message }, { status: 500 });
+    }
+
+    // Admin check
+    if (!user || user.email !== process.env.ADMIN_EMAIL) {
+      console.error('[generate] Unauthorized:', user?.email, 'expected:', process.env.ADMIN_EMAIL);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('[generate] JSON parse error:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const { topic, categoryId } = body;
+
+    if (!topic || topic.trim().length < 3) {
+      return NextResponse.json({ error: 'Topic is required (min 3 chars)' }, { status: 400 });
+    }
+
+    // Get category name for prompt
+    const { data: category, error: categoryError } = await supabase
+      .from('categories')
+      .select('name')
+      .eq('id', categoryId)
+      .single();
+
+    if (categoryError) {
+      console.error('[generate] Category fetch error:', categoryError);
+    }
+
+    // Create job record
+    const { data: job, error: jobError } = await supabase
+      .from('generation_jobs')
+      .insert({
+        topic: topic.trim(),
+        category_id: categoryId,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (jobError) {
+      console.error('[generate] Job creation error:', jobError);
+      return NextResponse.json({ error: 'Failed to create job', details: jobError.message }, { status: 500 });
+    }
+
+    // Start generation in background (fire and forget)
+    // The actual generation runs asynchronously
+    runGeneration(job.id, topic.trim(), category?.name || 'General', supabase);
+
+    return NextResponse.json({ jobId: job.id });
+  } catch (error) {
+    console.error('[generate] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
-
-  const { topic, categoryId } = await request.json();
-
-  if (!topic || topic.trim().length < 3) {
-    return NextResponse.json({ error: 'Topic is required (min 3 chars)' }, { status: 400 });
-  }
-
-  // Get category name for prompt
-  const { data: category } = await supabase
-    .from('categories')
-    .select('name')
-    .eq('id', categoryId)
-    .single();
-
-  // Create job record
-  const { data: job, error: jobError } = await supabase
-    .from('generation_jobs')
-    .insert({
-      topic: topic.trim(),
-      category_id: categoryId,
-      status: 'pending',
-    })
-    .select()
-    .single();
-
-  if (jobError) {
-    return NextResponse.json({ error: 'Failed to create job' }, { status: 500 });
-  }
-
-  // Start generation in background (fire and forget)
-  // The actual generation runs asynchronously
-  runGeneration(job.id, topic.trim(), category?.name || 'General', supabase);
-
-  return NextResponse.json({ jobId: job.id });
 }

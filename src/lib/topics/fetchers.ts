@@ -167,7 +167,7 @@ async function fetchReddit(source: SourceConfig): Promise<RawHeadline[]> {
   try {
     const response = await fetch(source.url, {
       headers: {
-        'User-Agent': 'TheDailyDeep/1.0',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         'Accept': 'application/json',
       },
       next: { revalidate: 3600 },

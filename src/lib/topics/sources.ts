@@ -12,11 +12,12 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
     { name: 'Foreign Affairs', tier: 0, type: 'rss', url: 'https://www.foreignaffairs.com/rss.xml', categories: ['Geopolitics'] },
     { name: 'Foreign Policy', tier: 0, type: 'rss', url: 'https://foreignpolicy.com/feed/', categories: ['Geopolitics'] },
     { name: 'The Diplomat', tier: 0, type: 'rss', url: 'https://thediplomat.com/feed/', categories: ['Geopolitics'] },
-    // Tier 1 - Premium quality
-    { name: 'Reuters World', tier: 1, type: 'rss', url: 'https://rsshub.app/reuters/world', categories: ['Geopolitics'] },
-    { name: 'AP News', tier: 1, type: 'rss', url: 'https://rsshub.app/apnews/topics/world-news', categories: ['Geopolitics'] },
+    // Tier 1 - Premium quality (wire services)
+    { name: 'Google News World', tier: 1, type: 'rss', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB', categories: ['Geopolitics'] },
+    { name: 'ABC News International', tier: 1, type: 'rss', url: 'https://abcnews.go.com/abcnews/internationalheadlines', categories: ['Geopolitics'] },
     { name: 'BBC World', tier: 1, type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', categories: ['Geopolitics'] },
     // Tier 2 - Quality mainstream
+    { name: 'CBS News World', tier: 2, type: 'rss', url: 'https://www.cbsnews.com/latest/rss/world', categories: ['Geopolitics'] },
     { name: 'DW News', tier: 2, type: 'rss', url: 'https://rss.dw.com/xml/rss-en-world', categories: ['Geopolitics'] },
     { name: 'Guardian World', tier: 2, type: 'rss', url: 'https://www.theguardian.com/world/rss', categories: ['Geopolitics'] },
     // Tier 3 - General coverage
@@ -29,11 +30,12 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
     { name: 'Project Syndicate', tier: 0, type: 'rss', url: 'https://www.project-syndicate.org/rss', categories: ['Economics'] },
     { name: 'Brookings', tier: 0, type: 'rss', url: 'https://www.brookings.edu/feed/', categories: ['Economics'] },
     // Tier 1 - Premium financial
-    { name: 'Reuters Business', tier: 1, type: 'rss', url: 'https://rsshub.app/reuters/business', categories: ['Economics'] },
+    { name: 'Google News Business', tier: 1, type: 'rss', url: 'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en', categories: ['Economics'] },
     { name: 'FT', tier: 1, type: 'api', url: 'https://saurav.tech/NewsAPI/top-headlines/category/business/us.json', categories: ['Economics'] },
     // Tier 2 - Business news
     { name: 'BBC Business', tier: 2, type: 'rss', url: 'https://feeds.bbci.co.uk/news/business/rss.xml', categories: ['Economics'] },
     { name: 'CNBC', tier: 2, type: 'api', url: 'https://saurav.tech/NewsAPI/top-headlines/category/business/us.json', categories: ['Economics'] },
+    { name: 'Euronews', tier: 2, type: 'rss', url: 'https://www.euronews.com/rss?level=theme&name=news', categories: ['Economics'] },
     // Tier 3
     { name: 'NPR Economy', tier: 3, type: 'rss', url: 'https://feeds.npr.org/1006/rss.xml', categories: ['Economics'] },
   ],
@@ -105,10 +107,11 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
     { name: 'International Crisis Group', tier: 0, type: 'rss', url: 'https://www.crisisgroup.org/rss.xml', categories: ['Conflict', 'Geopolitics'] },
     { name: 'War on the Rocks', tier: 0, type: 'rss', url: 'https://warontherocks.com/feed/', categories: ['Conflict', 'Geopolitics'] },
     // Tier 1 - Wire services
-    { name: 'Reuters', tier: 1, type: 'rss', url: 'https://rsshub.app/reuters/world', categories: ['Conflict', 'Geopolitics'] },
-    { name: 'AP News', tier: 1, type: 'rss', url: 'https://rsshub.app/apnews/topics/world-news', categories: ['Conflict', 'Geopolitics'] },
+    { name: 'Google News World', tier: 1, type: 'rss', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB', categories: ['Conflict', 'Geopolitics'] },
+    { name: 'ABC News International', tier: 1, type: 'rss', url: 'https://abcnews.go.com/abcnews/internationalheadlines', categories: ['Conflict', 'Geopolitics'] },
     { name: 'BBC World', tier: 1, type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', categories: ['Conflict'] },
     // Tier 2
+    { name: 'CBS News World', tier: 2, type: 'rss', url: 'https://www.cbsnews.com/latest/rss/world', categories: ['Conflict'] },
     { name: 'DW News', tier: 2, type: 'rss', url: 'https://rss.dw.com/xml/rss-en-world', categories: ['Conflict'] },
     { name: 'France24', tier: 2, type: 'rss', url: 'https://www.france24.com/en/rss', categories: ['Conflict'] },
     // Tier 3
@@ -120,7 +123,7 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
 export const FALLBACK_SOURCES: SourceConfig[] = [
   { name: 'NewsAPI General', tier: 2, type: 'api', url: 'https://saurav.tech/NewsAPI/top-headlines/category/general/us.json', categories: ['*'] },
   { name: 'BBC Top', tier: 2, type: 'rss', url: 'https://feeds.bbci.co.uk/news/rss.xml', categories: ['*'] },
-  { name: 'Reuters Top', tier: 1, type: 'rss', url: 'https://rsshub.app/reuters/world', categories: ['*'] },
+  { name: 'Google News Top', tier: 1, type: 'rss', url: 'https://news.google.com/rss', categories: ['*'] },
 ];
 
 /**

@@ -2,6 +2,20 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { generateReport, GenerationError } from '@/lib/gemini/client';
 
 /**
+ * Extract error message from any error type (Error, Supabase error object, etc.)
+ */
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null) {
+    const obj = error as Record<string, unknown>;
+    if (typeof obj.message === 'string') return obj.message;
+    if (typeof obj.error === 'string') return obj.error;
+    return JSON.stringify(error);
+  }
+  return String(error);
+}
+
+/**
  * Run the full generation workflow: AI generation -> validation -> save to database
  * Uses fire-and-forget pattern - caller receives immediate response while this runs async
  */
@@ -53,6 +67,7 @@ export async function runGeneration(
       .replace(/^-|-$/g, '');
 
     // Save report to database
+    console.log(`[Generation ${jobId}] Saving report: "${report.title.slice(0, 50)}..."`);
     const { data: savedReport, error: saveError } = await supabase
       .from('reports')
       .insert({
@@ -74,7 +89,10 @@ export async function runGeneration(
       .select()
       .single();
 
-    if (saveError) throw saveError;
+    if (saveError) {
+      console.error(`[Generation ${jobId}] Database save failed:`, JSON.stringify(saveError));
+      throw saveError;
+    }
 
     // Record in topic history
     await supabase.from('topic_history').insert({
@@ -95,7 +113,7 @@ export async function runGeneration(
       .eq('id', jobId);
   } catch (error: unknown) {
     // Mark job as failed with user-friendly error message
-    const rawError = error instanceof Error ? error.message : 'Unknown error';
+    const rawError = extractErrorMessage(error);
 
     // Check if we have raw response data from GenerationError
     let debugInfo = '';

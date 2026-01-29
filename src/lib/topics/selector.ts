@@ -46,8 +46,8 @@ const VIRTUAL_SEED_WINDOW_HOURS = 6; // Only for first 6 hours
 
 // Deep Research threshold
 // Deep Research threshold - triggers entity-based research plan for Gemini
-// Lowered from 850 to 400 based on observed score ranges (13-136 typical)
-const DEEP_RESEARCH_THRESHOLD = 400;
+// Lowered from 850 to 100 based on observed score ranges after penalties (50-200 typical)
+const DEEP_RESEARCH_THRESHOLD = 100;
 
 /**
  * Wilson score lower bound approximation for confidence adjustment

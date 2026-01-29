@@ -11,7 +11,7 @@ import { fetchAllSources } from './fetchers';
 import { clusterHeadlines, rankClusters } from './clusterer';
 import { queryGDELT, queryGDELTVelocity } from './gdelt';
 import { calculateMeatScore, calculateMeatScoreFallback } from './meat-score';
-import { calculateDepthScore, isShallowTopic } from './depth-score';
+import { calculateDepthScore, isShallowTopic, calculateNegativePenalty } from './depth-score';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Minimum hotness score to be considered a valid trending topic
@@ -20,27 +20,61 @@ const MINIMUM_HOTNESS_THRESHOLD = 150;
 // Minimum Meat-Score to be considered (when GDELT data is available)
 const MINIMUM_MEAT_SCORE_THRESHOLD = 100;
 
-// Categories that allow single-source clusters (slow news cycles)
-const SINGLE_SOURCE_CATEGORIES = ['Climate', 'Science'];
-
 // Cache for topic aggregation (avoid hammering sources)
 const topicCache: Map<string, { result: AggregationResult; timestamp: number }> = new Map();
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+// Time decay constants (HN-style)
+const TIME_DECAY_GRAVITY = 1.5; // Slightly less aggressive than HN's 1.8
+const TIME_DECAY_OFFSET = 2; // Hours offset to prevent division by zero
+
+/**
+ * Wilson score lower bound approximation for confidence adjustment
+ * Penalizes low-sample clusters that may appear artificially confident
+ */
+function confidenceAdjustedScore(score: number, sampleSize: number): number {
+  const z = 1.96; // 95% confidence
+  const n = Math.max(sampleSize, 1);
+  const p = score / 1000; // Normalize to 0-1
+
+  // Wilson score lower bound approximation
+  const denominator = 1 + z * z / n;
+  const center = p + z * z / (2 * n);
+  const margin = z * Math.sqrt((p * (1 - p) + z * z / (4 * n)) / n);
+
+  return ((center - margin) / denominator) * 1000;
+}
+
 /**
  * Calculate combined score for ranking
  * Weights: 40% popularity (meat), 60% depth
+ * Applies: shallow penalty, negative signals, time decay, confidence adjustment
  */
 function calculateCombinedScore(cluster: TopicCluster): number {
   const meatScore = cluster.meatScore?.meatScore ?? 0;
   const depthScore = cluster.depthScore?.depthScore ?? 0;
   const shallowPenalty = cluster.depthScore?.shallowPenalty ?? 0;
 
-  // Base combined score: 40% meat (popularity) + 60% depth (substance)
+  // 1. Base combined score: 40% meat (popularity) + 60% depth (substance)
   const baseScore = 0.4 * meatScore + 0.6 * depthScore;
 
-  // Apply shallow penalty (reduces score by 50-70% for shallow topics)
-  const finalScore = baseScore * (1 - shallowPenalty);
+  // 2. Apply shallow penalty (reduces score by 50-70% for shallow topics)
+  const afterShallowPenalty = baseScore * (1 - shallowPenalty);
+
+  // 3. Apply negative signal penalty (promotional, clickbait, listicles)
+  const negativePenalty = calculateNegativePenalty(cluster.topic);
+  const afterNegativePenalty = afterShallowPenalty * (1 - negativePenalty);
+
+  // 4. Apply time decay (multiplicative, HN-style)
+  const hoursOld = (Date.now() - cluster.latestSeen.getTime()) / (1000 * 60 * 60);
+  const timeDecay = 1 / Math.pow(hoursOld + TIME_DECAY_OFFSET, TIME_DECAY_GRAVITY / 3); // Normalized
+  // Min 50% retention to not completely kill older but important stories
+  const afterTimeDecay = afterNegativePenalty * (0.5 + 0.5 * timeDecay);
+
+  // 5. Apply confidence adjustment (Wilson score)
+  // Sample size combines source count and headline diversity
+  const sampleSize = cluster.sourceCount + (cluster.headlines.length / 3);
+  const finalScore = confidenceAdjustedScore(afterTimeDecay, sampleSize);
 
   return Math.round(finalScore);
 }
@@ -278,9 +312,9 @@ export async function aggregateTopics(
 
   // 3. Cluster similar headlines
   console.log('\n🔗 Clustering headlines...');
-  const minSourceCount = SINGLE_SOURCE_CATEGORIES.includes(category) ? 1 : 2;
-  const clusters = clusterHeadlines(headlines, minSourceCount);
-  console.log(`Formed ${clusters.length} topic clusters (min ${minSourceCount} source${minSourceCount > 1 ? 's' : ''})`);
+  // All categories now require 2+ sources for validation (overlapping mainstream sources added)
+  const clusters = clusterHeadlines(headlines, 2);
+  console.log(`Formed ${clusters.length} topic clusters (min 2 sources)`);
 
   // 4. Score and rank clusters (initial hotness scoring)
   console.log('\n📈 Scoring clusters...');

@@ -39,6 +39,9 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
   ],
 
   Technology: [
+    // Tier 0 - Deep Analysis (investigation-focused)
+    { name: 'MIT Technology Review', tier: 0, type: 'rss', url: 'https://www.technologyreview.com/feed/', categories: ['Technology'] },
+    { name: 'Stratechery', tier: 0, type: 'rss', url: 'https://stratechery.com/feed/', categories: ['Technology'] },
     // Tier 1 - Tech authority
     { name: 'HackerNews', tier: 1, type: 'hackernews', url: 'https://hacker-news.firebaseio.com/v0/topstories.json', categories: ['Technology'] },
     { name: 'Ars Technica', tier: 1, type: 'rss', url: 'https://feeds.arstechnica.com/arstechnica/index', categories: ['Technology'] },
@@ -51,12 +54,16 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
   ],
 
   Climate: [
+    // Tier 0 - Deep Analysis (investigation-focused)
+    { name: 'Yale Climate Connections', tier: 0, type: 'rss', url: 'https://yaleclimateconnections.org/feed/', categories: ['Climate'] },
     // Tier 1 - Scientific authority
     { name: 'Nature Climate', tier: 1, type: 'rss', url: 'https://www.nature.com/nclimate.rss', categories: ['Climate', 'Science'] },
     { name: 'Carbon Brief', tier: 1, type: 'rss', url: 'https://www.carbonbrief.org/feed/', categories: ['Climate'] },
-    // Tier 2
+    // Tier 2 - Overlapping mainstream for cross-validation
     { name: 'Guardian Environment', tier: 2, type: 'rss', url: 'https://www.theguardian.com/environment/rss', categories: ['Climate'] },
-    { name: 'BBC Science', tier: 2, type: 'rss', url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml', categories: ['Climate', 'Science'] },
+    { name: 'Guardian Climate', tier: 2, type: 'rss', url: 'https://www.theguardian.com/environment/climate-crisis/rss', categories: ['Climate'] },
+    { name: 'BBC Environment', tier: 2, type: 'rss', url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml', categories: ['Climate', 'Science'] },
+    { name: 'NPR Climate', tier: 2, type: 'rss', url: 'https://feeds.npr.org/1025/rss.xml', categories: ['Climate'] },
     // Tier 3
     { name: 'Phys.org Climate', tier: 3, type: 'rss', url: 'https://phys.org/rss-feed/earth-news/environment/', categories: ['Climate'] },
   ],
@@ -76,18 +83,27 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
   ],
 
   Science: [
+    // Tier 0 - Deep Analysis (investigation-focused)
+    { name: 'Quanta Magazine', tier: 0, type: 'rss', url: 'https://api.quantamagazine.org/feed/', categories: ['Science'] },
+    { name: 'Nautilus', tier: 0, type: 'rss', url: 'https://nautil.us/feed/', categories: ['Science'] },
     // Tier 1 - Scientific journals
     { name: 'Nature', tier: 1, type: 'rss', url: 'https://www.nature.com/nature.rss', categories: ['Science'] },
     { name: 'Science Mag', tier: 1, type: 'rss', url: 'https://www.science.org/rss/news_current.xml', categories: ['Science'] },
     { name: 'Phys.org', tier: 1, type: 'rss', url: 'https://phys.org/rss-feed/', categories: ['Science'] },
-    // Tier 2
+    // Tier 2 - Overlapping mainstream for cross-validation
     { name: 'Scientific American', tier: 2, type: 'rss', url: 'https://rss.sciam.com/ScientificAmerican-Global', categories: ['Science'] },
     { name: 'New Scientist', tier: 2, type: 'rss', url: 'https://www.newscientist.com/feed/home/', categories: ['Science'] },
+    { name: 'BBC Science', tier: 2, type: 'rss', url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml', categories: ['Science', 'Climate'] },
+    { name: 'Guardian Science', tier: 2, type: 'rss', url: 'https://www.theguardian.com/science/rss', categories: ['Science'] },
+    { name: 'NPR Science', tier: 2, type: 'rss', url: 'https://feeds.npr.org/1007/rss.xml', categories: ['Science'] },
     // Tier 3
     { name: 'Reddit Science', tier: 3, type: 'reddit', url: 'https://www.reddit.com/r/science/top.json?t=day&limit=25', categories: ['Science'] },
   ],
 
   Conflict: [
+    // Tier 0 - Deep Analysis (investigation-focused)
+    { name: 'International Crisis Group', tier: 0, type: 'rss', url: 'https://www.crisisgroup.org/rss.xml', categories: ['Conflict', 'Geopolitics'] },
+    { name: 'War on the Rocks', tier: 0, type: 'rss', url: 'https://warontherocks.com/feed/', categories: ['Conflict', 'Geopolitics'] },
     // Tier 1 - Wire services
     { name: 'Reuters', tier: 1, type: 'rss', url: 'https://www.rss.reuters.com/news/topNews', categories: ['Conflict', 'Geopolitics'] },
     { name: 'AP News', tier: 1, type: 'rss', url: 'https://rsshub.app/apnews/topics/world-news', categories: ['Conflict', 'Geopolitics'] },

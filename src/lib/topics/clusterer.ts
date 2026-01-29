@@ -237,8 +237,9 @@ export function calculateHotnessScore(cluster: TopicCluster): number {
   const now = Date.now();
 
   // 1. Source diversity (0-100 points)
-  // More unique sources = more important story
-  const sourceDiversityScore = Math.min(cluster.sourceCount * 15, 100);
+  // Logarithmic weighting - first sources matter more than later ones
+  // 1 source = 15pts, 2 = 24pts, 5 = 39pts, 10 = 50pts
+  const sourceDiversityScore = Math.min(Math.log10(1 + cluster.sourceCount) * 50, 100);
 
   // 2. Quality weight (0-100 points)
   // Higher tier sources = more authoritative

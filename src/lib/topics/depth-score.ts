@@ -81,10 +81,67 @@ const TECH_COMPANY_RELEASE_PATTERNS = [
   /\b(iphone|ipad|mac|pixel|surface|galaxy)\b.*\b(update|new|release)/i,
 ];
 
+// Negative signal patterns (promotional, clickbait, listicles)
+const NEGATIVE_SIGNALS = {
+  // Promotional patterns
+  promotional: [
+    /\b(buy now|limited time|discount|sale|promo|deal|offer)\b/i,
+    /\b(sponsored|ad|advertisement|partner content)\b/i,
+    /\b(exclusive offer|special price|save \d+%)\b/i,
+  ],
+  // Clickbait patterns
+  clickbait: [
+    /\b(you won't believe|shocking|mind-blowing|jaw-dropping)\b/i,
+    /\b(this one weird trick|doctors hate|secret revealed)\b/i,
+    /\b(what happens next|will shock you|changed everything)\b/i,
+    /\b(finally revealed|exposed|the truth about)\b/i,
+  ],
+  // Listicle patterns (often shallow)
+  listicle: [
+    /^\d+\s+(things|ways|reasons|tips|tricks|hacks|secrets)/i,
+    /\btop\s+\d+\b/i,
+    /\bbest\s+\d+\b/i,
+  ],
+};
+
+// Exclusion patterns for systemic impact keywords (prevent false positives)
+const SYSTEMIC_IMPACT_EXCLUSIONS = {
+  geopolitical: [
+    /star wars/i, /game of thrones/i, /call of duty/i,
+    /world of warcraft/i, /war(craft|frame|hammer)/i,
+    /avengers.*war/i, /infinity war/i, /civil war.*marvel/i,
+  ],
+  economic: [
+    /fantasy (football|league|basketball)/i,
+    /market(place|ing)/i,
+    /stock market game/i,
+  ],
+};
+
+/**
+ * Check if text matches any exclusion pattern
+ * Prevents false positives like "Star Wars" triggering geopolitical keywords
+ */
+function matchesExclusion(text: string): boolean {
+  for (const exclusions of Object.values(SYSTEMIC_IMPACT_EXCLUSIONS)) {
+    for (const pattern of exclusions) {
+      if (pattern.test(text)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /**
  * Calculate systemic impact score
  */
 function calculateSystemicImpact(text: string): number {
+  // Check exclusions first - skip scoring if it's likely a false positive
+  if (matchesExclusion(text)) {
+    return 0;
+  }
+
   const lowerText = text.toLowerCase();
   let matchCount = 0;
 
@@ -99,6 +156,27 @@ function calculateSystemicImpact(text: string): number {
   // Normalize to 0-1, with diminishing returns after 3 matches
   const rawScore = Math.min(matchCount / 3, 1);
   return rawScore;
+}
+
+/**
+ * Calculate negative signal penalty for low-quality patterns
+ * Returns 0-0.3 (0 = no penalty, 0.3 = max penalty for promotional/clickbait)
+ */
+export function calculateNegativePenalty(text: string): number {
+  let penalty = 0;
+
+  for (const [type, patterns] of Object.entries(NEGATIVE_SIGNALS)) {
+    for (const pattern of patterns) {
+      if (pattern.test(text)) {
+        // Different penalties by type
+        const typePenalty = type === 'clickbait' ? 0.15 : type === 'promotional' ? 0.12 : 0.08;
+        penalty += typePenalty;
+      }
+    }
+  }
+
+  // Cap at 30% penalty
+  return Math.min(penalty, 0.3);
 }
 
 /**

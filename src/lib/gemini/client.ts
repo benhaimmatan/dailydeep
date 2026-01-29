@@ -18,7 +18,7 @@ export class GenerationError extends Error {
 }
 
 /**
- * Retry configuration
+ * Retry configuration for network errors
  */
 const RETRY_CONFIG = {
   maxRetries: 3,
@@ -26,6 +26,14 @@ const RETRY_CONFIG = {
   maxDelayMs: 30000, // 30 seconds max
   backoffMultiplier: 2,
   retryableCodes: [503, 429, 500, 502, 504], // Overloaded, rate limited, server errors
+};
+
+/**
+ * Retry configuration for content quality issues (e.g., too short)
+ */
+const CONTENT_RETRY_CONFIG = {
+  maxRetries: 2, // Up to 2 content retries
+  minWordCount: 3000,
 };
 
 /**
@@ -106,136 +114,165 @@ export async function generateReport(
   onProgress?: (message: string) => Promise<void>
 ): Promise<GenerateReportResult> {
   const ai = createGeminiClient();
-  const prompt = buildReportPrompt(topic, category);
 
-  let lastError: Error | null = null;
-  let delay = RETRY_CONFIG.initialDelayMs;
+  // Outer loop for content quality retries (e.g., too short)
+  let contentRetryAttempt = 0;
+  let previousWordCount = 0;
 
-  for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries + 1; attempt++) {
-    try {
-      const attemptLabel = attempt === 1 ? '' : ` (attempt ${attempt}/${RETRY_CONFIG.maxRetries + 1})`;
-      await onProgress?.(`Starting AI generation...${attemptLabel}`);
+  while (contentRetryAttempt <= CONTENT_RETRY_CONFIG.maxRetries) {
+    // Build prompt with retry context if this is a content retry
+    const retryContext = contentRetryAttempt > 0
+      ? { attempt: contentRetryAttempt, previousWordCount }
+      : undefined;
+    const prompt = buildReportPrompt(topic, category, retryContext);
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: reportJsonSchema,
-        },
-      });
+    let lastError: Error | null = null;
+    let delay = RETRY_CONFIG.initialDelayMs;
 
-      await onProgress?.('Validating report structure...');
-
-      // Parse and validate response
-      const text = response.text;
-      if (!text) {
-        throw new Error('Empty response from Gemini');
-      }
-
-      // Store raw response for debugging
-      const rawResponse = text;
-
-      let parsed;
+    // Inner loop for network error retries
+    for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries + 1; attempt++) {
       try {
-        parsed = JSON.parse(text);
-      } catch {
-        // If JSON parsing fails, include the raw text in the error
-        throw new GenerationError(`Invalid JSON from Gemini. Raw response (first 1000 chars): ${text.slice(0, 1000)}`, text);
+        const contentRetryLabel = contentRetryAttempt > 0 ? ` [content retry ${contentRetryAttempt}/${CONTENT_RETRY_CONFIG.maxRetries}]` : '';
+        const attemptLabel = attempt === 1 ? '' : ` (network attempt ${attempt}/${RETRY_CONFIG.maxRetries + 1})`;
+        await onProgress?.(`Starting AI generation...${contentRetryLabel}${attemptLabel}`);
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: reportJsonSchema,
+          },
+        });
+
+        await onProgress?.('Validating report structure...');
+
+        // Parse and validate response
+        const text = response.text;
+        if (!text) {
+          throw new Error('Empty response from Gemini');
+        }
+
+        // Store raw response for debugging
+        const rawResponse = text;
+
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          // If JSON parsing fails, include the raw text in the error
+          throw new GenerationError(`Invalid JSON from Gemini. Raw response (first 1000 chars): ${text.slice(0, 1000)}`, text);
+        }
+
+        // Capture field lengths for debugging
+        const fieldLengths = {
+          title: parsed.title?.length || 0,
+          subtitle: parsed.subtitle?.length || 0,
+          summary: parsed.summary?.length || 0,
+          content: parsed.content?.length || 0,
+          seo_title: parsed.seo_title?.length || 0,
+          seo_description: parsed.seo_description?.length || 0,
+          sources: parsed.sources?.length || 0,
+        };
+
+        await onProgress?.(`Raw response received. Lengths: title=${fieldLengths.title}, subtitle=${fieldLengths.subtitle}, summary=${fieldLengths.summary}, content=${fieldLengths.content}, seo_title=${fieldLengths.seo_title}, seo_desc=${fieldLengths.seo_description}, sources=${fieldLengths.sources}`);
+
+        // Truncate fields that Gemini may have exceeded limits on
+        // Gemini doesn't enforce character limits from JSON schema
+        if (parsed.summary && parsed.summary.length > 500) {
+          parsed.summary = parsed.summary.slice(0, 497) + '...';
+        }
+        if (parsed.seo_title && parsed.seo_title.length > 60) {
+          parsed.seo_title = parsed.seo_title.slice(0, 57) + '...';
+        }
+        if (parsed.seo_description && parsed.seo_description.length > 160) {
+          parsed.seo_description = parsed.seo_description.slice(0, 157) + '...';
+        }
+        if (parsed.subtitle && parsed.subtitle.length > 200) {
+          parsed.subtitle = parsed.subtitle.slice(0, 197) + '...';
+        }
+        if (parsed.title && parsed.title.length > 100) {
+          parsed.title = parsed.title.slice(0, 97) + '...';
+        }
+
+        let validated;
+        try {
+          validated = ReportSchema.parse(parsed);
+        } catch (zodError) {
+          // Validation failed - throw with raw response preserved
+          throw new GenerationError(
+            `Validation failed: ${zodError instanceof Error ? zodError.message : String(zodError)}`,
+            rawResponse,
+            fieldLengths
+          );
+        }
+
+        // Additional quality checks
+        const wordCount = validated.content.split(/\s+/).length;
+
+        // Check if content is too short - retry if we have attempts left
+        if (wordCount < CONTENT_RETRY_CONFIG.minWordCount) {
+          if (contentRetryAttempt < CONTENT_RETRY_CONFIG.maxRetries) {
+            const shortfall = CONTENT_RETRY_CONFIG.minWordCount - wordCount;
+            previousWordCount = wordCount;
+            contentRetryAttempt++;
+            await onProgress?.(`Content too short: ${wordCount} words (${shortfall} words below minimum). Regenerating with enhanced prompt... [retry ${contentRetryAttempt}/${CONTENT_RETRY_CONFIG.maxRetries}]`);
+            break; // Break inner loop to retry with new prompt
+          }
+          // No more content retries - throw error
+          throw new GenerationError(
+            `Report too short: ${wordCount} words (minimum ${CONTENT_RETRY_CONFIG.minWordCount}) after ${contentRetryAttempt} content retries`,
+            rawResponse,
+            fieldLengths
+          );
+        }
+
+        if (validated.sources.length < 5) {
+          throw new GenerationError(
+            `Insufficient sources: ${validated.sources.length} (minimum 5)`,
+            rawResponse,
+            fieldLengths
+          );
+        }
+
+        await onProgress?.(`Report validated successfully (${wordCount} words)`);
+
+        return { report: validated, rawResponse };
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const { retryable, code } = isRetryableError(error);
+
+        // If not retryable or last attempt, throw
+        if (!retryable || attempt > RETRY_CONFIG.maxRetries) {
+          const errorContext = code ? ` (HTTP ${code})` : '';
+          throw new Error(`Generation failed${errorContext}: ${lastError.message}`);
+        }
+
+        // Log retry attempt
+        const waitTime = formatWaitTime(delay);
+        const retryMessage = code === 503
+          ? `Gemini is temporarily overloaded. Retrying in ${waitTime}... (attempt ${attempt}/${RETRY_CONFIG.maxRetries + 1})`
+          : code === 429
+          ? `Rate limited by Gemini. Retrying in ${waitTime}... (attempt ${attempt}/${RETRY_CONFIG.maxRetries + 1})`
+          : `Temporary error. Retrying in ${waitTime}... (attempt ${attempt}/${RETRY_CONFIG.maxRetries + 1})`;
+
+        await onProgress?.(retryMessage);
+
+        // Wait before retry
+        await sleep(delay);
+
+        // Exponential backoff with cap
+        delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
       }
+    }
 
-      // Capture field lengths for debugging
-      const fieldLengths = {
-        title: parsed.title?.length || 0,
-        subtitle: parsed.subtitle?.length || 0,
-        summary: parsed.summary?.length || 0,
-        content: parsed.content?.length || 0,
-        seo_title: parsed.seo_title?.length || 0,
-        seo_description: parsed.seo_description?.length || 0,
-        sources: parsed.sources?.length || 0,
-      };
-
-      await onProgress?.(`Raw response received. Lengths: title=${fieldLengths.title}, subtitle=${fieldLengths.subtitle}, summary=${fieldLengths.summary}, content=${fieldLengths.content}, seo_title=${fieldLengths.seo_title}, seo_desc=${fieldLengths.seo_description}, sources=${fieldLengths.sources}`);
-
-      // Truncate fields that Gemini may have exceeded limits on
-      // Gemini doesn't enforce character limits from JSON schema
-      if (parsed.summary && parsed.summary.length > 500) {
-        parsed.summary = parsed.summary.slice(0, 497) + '...';
-      }
-      if (parsed.seo_title && parsed.seo_title.length > 60) {
-        parsed.seo_title = parsed.seo_title.slice(0, 57) + '...';
-      }
-      if (parsed.seo_description && parsed.seo_description.length > 160) {
-        parsed.seo_description = parsed.seo_description.slice(0, 157) + '...';
-      }
-      if (parsed.subtitle && parsed.subtitle.length > 200) {
-        parsed.subtitle = parsed.subtitle.slice(0, 197) + '...';
-      }
-      if (parsed.title && parsed.title.length > 100) {
-        parsed.title = parsed.title.slice(0, 97) + '...';
-      }
-
-      let validated;
-      try {
-        validated = ReportSchema.parse(parsed);
-      } catch (zodError) {
-        // Validation failed - throw with raw response preserved
-        throw new GenerationError(
-          `Validation failed: ${zodError instanceof Error ? zodError.message : String(zodError)}`,
-          rawResponse,
-          fieldLengths
-        );
-      }
-
-      // Additional quality checks
-      const wordCount = validated.content.split(/\s+/).length;
-      if (wordCount < 3000) {
-        throw new GenerationError(
-          `Report too short: ${wordCount} words (minimum 3000)`,
-          rawResponse,
-          fieldLengths
-        );
-      }
-
-      if (validated.sources.length < 5) {
-        throw new GenerationError(
-          `Insufficient sources: ${validated.sources.length} (minimum 5)`,
-          rawResponse,
-          fieldLengths
-        );
-      }
-
-      await onProgress?.('Report validated successfully');
-
-      return { report: validated, rawResponse };
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      const { retryable, code } = isRetryableError(error);
-
-      // If not retryable or last attempt, throw
-      if (!retryable || attempt > RETRY_CONFIG.maxRetries) {
-        const errorContext = code ? ` (HTTP ${code})` : '';
-        throw new Error(`Generation failed${errorContext}: ${lastError.message}`);
-      }
-
-      // Log retry attempt
-      const waitTime = formatWaitTime(delay);
-      const retryMessage = code === 503
-        ? `Gemini is temporarily overloaded. Retrying in ${waitTime}... (attempt ${attempt}/${RETRY_CONFIG.maxRetries + 1})`
-        : code === 429
-        ? `Rate limited by Gemini. Retrying in ${waitTime}... (attempt ${attempt}/${RETRY_CONFIG.maxRetries + 1})`
-        : `Temporary error. Retrying in ${waitTime}... (attempt ${attempt}/${RETRY_CONFIG.maxRetries + 1})`;
-
-      await onProgress?.(retryMessage);
-
-      // Wait before retry
-      await sleep(delay);
-
-      // Exponential backoff with cap
-      delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+    // If we reach here without returning, it means we broke out of the inner loop for a content retry
+    // Continue to next iteration of outer loop
+    if (contentRetryAttempt > CONTENT_RETRY_CONFIG.maxRetries) {
+      break;
     }
   }
 
   // Should never reach here, but just in case
-  throw lastError || new Error('Generation failed after all retries');
+  throw new Error('Generation failed after all retries');
 }

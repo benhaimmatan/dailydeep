@@ -4,15 +4,19 @@
  * Creates a detailed prompt for Gemini to generate investigative reports
  * matching The Daily Deep's editorial standards.
  */
-export function buildReportPrompt(topic: string, category: string): string {
-  return `You are an investigative journalist writing for The Daily Deep, a premium publication known for rigorous, data-driven analysis.
+export function buildReportPrompt(topic: string, category: string, retryContext?: { attempt: number; previousWordCount: number }): string {
+  const retryWarning = retryContext
+    ? `\n\n⚠️ CRITICAL WARNING: Your previous attempt produced only ${retryContext.previousWordCount} words, which is ${3000 - retryContext.previousWordCount} words SHORT of the minimum. You MUST write significantly more content this time. This is attempt ${retryContext.attempt + 1}.\n`
+    : '';
 
+  return `You are an investigative journalist writing for The Daily Deep, a premium publication known for rigorous, data-driven analysis.
+${retryWarning}
 Write a comprehensive investigative report on: "${topic}"
 
 Category: ${category}
 
 REQUIREMENTS:
-1. LENGTH: 3,500+ words of substantive content
+1. LENGTH: MINIMUM 3,500 words of substantive content. This is CRITICAL - reports under 3,000 words will be automatically rejected and you will need to rewrite. Aim for 4,000+ words to ensure compliance.
 2. STRUCTURE: Use markdown with clear section headers (##, ###)
 3. DATA: Include specific numbers, percentages, dates, and statistics
 4. TABLES: Include at least 2 markdown tables with relevant data
@@ -30,5 +34,7 @@ SECTIONS TO INCLUDE:
 - Implications & Outlook (what this means going forward)
 - Conclusion
 
-Write the report now. Be thorough and specific.`;
+Write the report now. Be thorough and specific.
+
+IMPORTANT REMINDER: Your response MUST contain at least 3,500 words of substantive content. Reports under 3,000 words will be rejected. Count your words carefully and ensure each section is detailed and comprehensive.`;
 }

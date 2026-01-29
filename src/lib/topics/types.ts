@@ -52,6 +52,29 @@ export interface TopicCluster {
   depthScore?: DepthScoreComponents; // Investigation-worthiness scoring
 }
 
+/**
+ * Deep Research Plan for high-scoring topics (>850)
+ * Entity-based research queries for Gemini 2.0/3
+ */
+export interface DeepResearchPlan {
+  triggered: boolean;
+  finalScore: number;
+  topic: string;
+  category: string;
+  entities: {
+    primary: string[];      // Main entities to research (people, orgs, places)
+    secondary: string[];    // Supporting entities
+    techTerms: string[];    // Technical terminology
+  };
+  researchQueries: {
+    factual: string[];      // What happened? Who is involved?
+    contextual: string[];   // Why does this matter? Historical context?
+    analytical: string[];   // What are the implications? Competing perspectives?
+  };
+  suggestedSources: string[];
+  timestamp: string;
+}
+
 export interface TrendingTopic {
   topic: string;
   hotnessScore: number;
@@ -67,6 +90,8 @@ export interface TrendingTopic {
   // Depth Score fields (optional - investigation-worthiness)
   depthScore?: number;
   isShallow?: boolean;
+  // Deep Research fields (optional - triggered when finalScore > 850)
+  deepResearch?: DeepResearchPlan;
 }
 
 export interface SourceConfig {

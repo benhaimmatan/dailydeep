@@ -5,13 +5,13 @@
  * Now enhanced with GDELT enrichment and Meat-Score ranking
  */
 
-import { TrendingTopic, AggregationResult, TopicCluster } from './types';
+import { TrendingTopic, AggregationResult, TopicCluster, DeepResearchPlan } from './types';
 import { getSourcesForCategory } from './sources';
 import { fetchAllSources } from './fetchers';
 import { clusterHeadlines, rankClusters } from './clusterer';
 import { queryGDELT, queryGDELTVelocity } from './gdelt';
 import { calculateMeatScore, calculateMeatScoreFallback } from './meat-score';
-import { calculateDepthScore, isShallowTopic, calculateNegativePenalty } from './depth-score';
+import { calculateDepthScore, isShallowTopic, calculateNegativePenalty, calculateSemanticMeat } from './depth-score';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Minimum hotness score to be considered a valid trending topic
@@ -24,17 +24,37 @@ const MINIMUM_MEAT_SCORE_THRESHOLD = 100;
 const topicCache: Map<string, { result: AggregationResult; timestamp: number }> = new Map();
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
-// Time decay constants (HN-style)
-const TIME_DECAY_GRAVITY = 1.5; // Slightly less aggressive than HN's 1.8
-const TIME_DECAY_OFFSET = 2; // Hours offset to prevent division by zero
+// Time decay offset (hours) to prevent division by zero
+const TIME_DECAY_OFFSET = 2;
+
+// Dynamic Gravity by category (Half-Life Model)
+// Lower gravity = slower decay (evergreen content stays relevant longer)
+// Higher gravity = faster decay (breaking news needs to be fresh)
+const CATEGORY_GRAVITY: Record<string, number> = {
+  Science: 0.8,      // Evergreen - discoveries stay relevant
+  Climate: 0.8,      // Evergreen - climate trends are slow-moving
+  Technology: 1.2,   // Mixed - some evergreen, some breaking
+  Economics: 1.5,    // Moderate - market news decays moderately
+  Society: 1.2,      // Mixed - social trends vary
+  Geopolitics: 1.8,  // Breaking - fast-moving diplomatic events
+  Conflict: 1.8,     // Breaking - conflict situations change rapidly
+};
+
+// Virtual Seeding: Tier 0 sources get bonus samples to bypass Wilson penalty
+const VIRTUAL_SEED_TIER_0 = 10; // n=10 virtual samples
+const VIRTUAL_SEED_WINDOW_HOURS = 6; // Only for first 6 hours
+
+// Deep Research threshold
+const DEEP_RESEARCH_THRESHOLD = 850;
 
 /**
  * Wilson score lower bound approximation for confidence adjustment
  * Penalizes low-sample clusters that may appear artificially confident
+ * @param virtualSeed - Additional virtual samples (for Tier 0 sources)
  */
-function confidenceAdjustedScore(score: number, sampleSize: number): number {
+function confidenceAdjustedScore(score: number, sampleSize: number, virtualSeed: number = 0): number {
   const z = 1.96; // 95% confidence
-  const n = Math.max(sampleSize, 1);
+  const n = Math.max(sampleSize + virtualSeed, 1);
   const p = score / 1000; // Normalize to 0-1
 
   // Wilson score lower bound approximation
@@ -46,37 +66,178 @@ function confidenceAdjustedScore(score: number, sampleSize: number): number {
 }
 
 /**
- * Calculate combined score for ranking
- * Weights: 40% popularity (meat), 60% depth
- * Applies: shallow penalty, negative signals, time decay, confidence adjustment
+ * Check if cluster has Tier 0 sources within the virtual seed window
  */
-function calculateCombinedScore(cluster: TopicCluster): number {
+function calculateVirtualSeed(cluster: TopicCluster): number {
+  // Check if any headline is from Tier 0 and within 6h window
+  const sixHoursAgo = Date.now() - (VIRTUAL_SEED_WINDOW_HOURS * 60 * 60 * 1000);
+
+  const hasTier0Recent = cluster.headlines.some(
+    h => h.sourceTier === 0 && h.publishedAt.getTime() > sixHoursAgo
+  );
+
+  return hasTier0Recent ? VIRTUAL_SEED_TIER_0 : 0;
+}
+
+/**
+ * Calculate combined score for ranking
+ * BaseScore: 0.4 * SemanticMeat + 0.6 * EntityDepth
+ * Applies: shallow penalty, negative signals, dynamic time decay, Wilson confidence
+ */
+function calculateCombinedScore(cluster: TopicCluster, category: string = 'Technology'): number {
   const meatScore = cluster.meatScore?.meatScore ?? 0;
   const depthScore = cluster.depthScore?.depthScore ?? 0;
   const shallowPenalty = cluster.depthScore?.shallowPenalty ?? 0;
 
-  // 1. Base combined score: 40% meat (popularity) + 60% depth (substance)
-  const baseScore = 0.4 * meatScore + 0.6 * depthScore;
+  // Calculate SemanticMeat from topic and headlines
+  const allText = [cluster.topic, ...cluster.headlines.map(h => h.title)].join(' ');
+  const semanticMeat = calculateSemanticMeat(allText);
+
+  // 1. Base combined score: 0.4 * SemanticMeat + 0.6 * EntityDepth
+  // SemanticMeat provides the "meat" (proper nouns + tech terms ratio)
+  // depthScore provides the "depth" (systemic impact, controversy, patterns)
+  const baseScore = 0.4 * semanticMeat.semanticMeat + 0.6 * depthScore;
+
+  // Boost with meatScore if available (GDELT enrichment)
+  const gdeltBoost = meatScore > 0 ? (meatScore / 1000) * 0.1 : 0; // Up to 10% boost
+  const boostedScore = baseScore * (1 + gdeltBoost);
 
   // 2. Apply shallow penalty (reduces score by 50-70% for shallow topics)
-  const afterShallowPenalty = baseScore * (1 - shallowPenalty);
+  const afterShallowPenalty = boostedScore * (1 - shallowPenalty);
 
-  // 3. Apply negative signal penalty (promotional, clickbait, listicles)
+  // 3. Apply negative signal penalty (promotional, clickbait, listicles, pronominal gaps)
   const negativePenalty = calculateNegativePenalty(cluster.topic);
   const afterNegativePenalty = afterShallowPenalty * (1 - negativePenalty);
 
-  // 4. Apply time decay (multiplicative, HN-style)
+  // 4. Apply dynamic time decay based on category (Half-Life Model)
   const hoursOld = (Date.now() - cluster.latestSeen.getTime()) / (1000 * 60 * 60);
-  const timeDecay = 1 / Math.pow(hoursOld + TIME_DECAY_OFFSET, TIME_DECAY_GRAVITY / 3); // Normalized
+  const gravity = CATEGORY_GRAVITY[category] ?? 1.5;
+  const timeDecay = 1 / Math.pow(hoursOld + TIME_DECAY_OFFSET, gravity / 3);
   // Min 50% retention to not completely kill older but important stories
   const afterTimeDecay = afterNegativePenalty * (0.5 + 0.5 * timeDecay);
 
-  // 5. Apply confidence adjustment (Wilson score)
-  // Sample size combines source count and headline diversity
+  // 5. Apply confidence adjustment (Wilson score) with virtual seeding
+  // Tier 0 sources get n=10 virtual samples for first 6h
   const sampleSize = cluster.sourceCount + (cluster.headlines.length / 3);
-  const finalScore = confidenceAdjustedScore(afterTimeDecay, sampleSize);
+  const virtualSeed = calculateVirtualSeed(cluster);
+  const finalScore = confidenceAdjustedScore(afterTimeDecay, sampleSize, virtualSeed);
 
   return Math.round(finalScore);
+}
+
+/**
+ * Extract entities from text (proper nouns, organizations, locations)
+ */
+function extractEntities(text: string): { primary: string[]; secondary: string[]; techTerms: string[] } {
+  // Primary entities: Multi-word capitalized phrases (organizations, places, names)
+  const primaryPattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/g;
+  const primaryMatches = text.match(primaryPattern) || [];
+  const primarySet = new Set<string>();
+  primaryMatches.forEach(m => primarySet.add(m));
+  const primary = Array.from(primarySet).slice(0, 5);
+
+  // Secondary entities: Single capitalized words (not at sentence start)
+  const secondaryPattern = /[a-z]\s+([A-Z][a-z]+)\b/g;
+  const secondarySet = new Set<string>();
+  let match;
+  while ((match = secondaryPattern.exec(text)) !== null) {
+    secondarySet.add(match[1]);
+  }
+  const secondary = Array.from(secondarySet)
+    .filter(s => !primary.some(p => p.includes(s)))
+    .slice(0, 5);
+
+  // Tech terms from the SemanticMeat patterns
+  const techPatterns = [
+    /\b(artificial intelligence|machine learning|deep learning|neural network|llm|gpt)\b/gi,
+    /\b(blockchain|cryptocurrency|bitcoin|ethereum|web3)\b/gi,
+    /\b(cybersecurity|ransomware|encryption|vulnerability)\b/gi,
+    /\b(crispr|mrna|gene therapy|clinical trial)\b/gi,
+    /\b(quantum computing|fusion|satellite|spacecraft)\b/gi,
+    /\b(gdp|inflation|recession|tariff|sanctions)\b/gi,
+  ];
+  const techTermsSet = new Set<string>();
+  for (const pattern of techPatterns) {
+    const matches = text.match(pattern);
+    if (matches) {
+      matches.forEach(m => techTermsSet.add(m.toLowerCase()));
+    }
+  }
+
+  return {
+    primary,
+    secondary,
+    techTerms: Array.from(techTermsSet).slice(0, 5),
+  };
+}
+
+/**
+ * Generate Deep Research Plan for high-scoring topics
+ * Triggered when FinalScore > 850
+ */
+function generateDeepResearchPlan(
+  cluster: TopicCluster,
+  category: string,
+  finalScore: number
+): DeepResearchPlan {
+  const allText = [cluster.topic, ...cluster.headlines.map(h => h.title)].join(' ');
+  const entities = extractEntities(allText);
+
+  // Generate research queries based on entities
+  const factual: string[] = [];
+  const contextual: string[] = [];
+  const analytical: string[] = [];
+
+  // Factual queries: What happened? Who is involved?
+  if (entities.primary.length > 0) {
+    factual.push(`What is the current situation regarding ${entities.primary[0]}?`);
+    factual.push(`Who are the key stakeholders involved in ${cluster.topic}?`);
+  }
+  if (entities.techTerms.length > 0) {
+    factual.push(`What are the technical details of ${entities.techTerms[0]}?`);
+  }
+  factual.push(`Timeline of events: ${cluster.topic}`);
+
+  // Contextual queries: Why does this matter? Historical context?
+  contextual.push(`Historical context and precedents for ${cluster.topic}`);
+  contextual.push(`Why is ${cluster.topic} significant for ${category}?`);
+  if (entities.primary.length > 1) {
+    contextual.push(`Relationship between ${entities.primary[0]} and ${entities.primary[1]}`);
+  }
+
+  // Analytical queries: Implications? Competing perspectives?
+  analytical.push(`What are the potential implications of ${cluster.topic}?`);
+  analytical.push(`Different perspectives and analysis on ${cluster.topic}`);
+  analytical.push(`Expert opinions and forecasts regarding ${cluster.topic}`);
+  if (cluster.depthScore?.controversy && cluster.depthScore.controversy > 0.5) {
+    analytical.push(`Arguments for and against positions on ${cluster.topic}`);
+  }
+
+  // Suggest sources based on category
+  const categorySourceSuggestions: Record<string, string[]> = {
+    Geopolitics: ['Foreign Affairs', 'Foreign Policy', 'The Diplomat', 'Council on Foreign Relations'],
+    Economics: ['The Economist', 'Financial Times', 'Bloomberg', 'Federal Reserve'],
+    Technology: ['MIT Technology Review', 'Ars Technica', 'Wired', 'IEEE Spectrum'],
+    Science: ['Nature', 'Science', 'Quanta Magazine', 'Scientific American'],
+    Climate: ['Carbon Brief', 'Yale Climate Connections', 'IPCC', 'Nature Climate Change'],
+    Conflict: ['International Crisis Group', 'War on the Rocks', 'Institute for the Study of War'],
+    Society: ['The Atlantic', 'The New Yorker', 'Pew Research', 'Brookings Institution'],
+  };
+
+  return {
+    triggered: true,
+    finalScore,
+    topic: cluster.topic,
+    category,
+    entities,
+    researchQueries: {
+      factual,
+      contextual,
+      analytical,
+    },
+    suggestedSources: categorySourceSuggestions[category] || categorySourceSuggestions['Geopolitics'],
+    timestamp: new Date().toISOString(),
+  };
 }
 
 /**
@@ -85,6 +246,7 @@ function calculateCombinedScore(cluster: TopicCluster): number {
  */
 async function enrichWithGDELT(
   clusters: TopicCluster[],
+  category: string,
   maxEnrich: number = 5
 ): Promise<TopicCluster[]> {
   console.log(`\n🥩 Enriching top ${maxEnrich} clusters with GDELT data...`);
@@ -178,10 +340,10 @@ async function enrichWithGDELT(
     });
   }
 
-  // Re-sort by combined score (40% meat + 60% depth, with shallow penalty)
+  // Re-sort by combined score (0.4 * SemanticMeat + 0.6 * EntityDepth)
   enrichedClusters.sort((a, b) => {
-    const combinedA = calculateCombinedScore(a);
-    const combinedB = calculateCombinedScore(b);
+    const combinedA = calculateCombinedScore(a, category);
+    const combinedB = calculateCombinedScore(b, category);
 
     if (combinedA !== combinedB) return combinedB - combinedA;
     return b.hotnessScore - a.hotnessScore;
@@ -321,7 +483,7 @@ export async function aggregateTopics(
   const rankedClusters = rankClusters(clusters);
 
   // 5. Enrich with GDELT and calculate Meat-Score
-  const enrichedClusters = await enrichWithGDELT(rankedClusters, 5);
+  const enrichedClusters = await enrichWithGDELT(rankedClusters, category, 5);
 
   // 6. Get used topics (if supabase provided)
   let usedTopics: string[] = [];
@@ -335,14 +497,15 @@ export async function aggregateTopics(
     c => !isTopicUsed(c.topic, usedTopics)
   );
 
-  console.log(`\n🏆 Top 5 trending topics (by Combined Score: 40% Meat + 60% Depth):`);
+  console.log(`\n🏆 Top 5 trending topics (by Combined Score: 0.4*SemanticMeat + 0.6*EntityDepth):`);
   availableClusters.slice(0, 5).forEach((c, i) => {
-    const combinedScore = calculateCombinedScore(c);
+    const combinedScore = calculateCombinedScore(c, category);
     const isShallow = c.depthScore && isShallowTopic(c.depthScore);
     const depthEmoji = isShallow ? '⚠️' : c.depthScore && c.depthScore.depthScore >= 300 ? '🔬' : '📰';
     const shallowLabel = isShallow ? ' [SHALLOW]' : '';
+    const deepResearchFlag = combinedScore > DEEP_RESEARCH_THRESHOLD ? ' 🔬[DEEP]' : '';
     console.log(
-      `  ${i + 1}. ${depthEmoji} [C:${combinedScore} M:${c.meatScore?.meatScore ?? 0} D:${c.depthScore?.depthScore ?? 0}] ${c.topic} (${c.sourceCount} sources)${shallowLabel}`
+      `  ${i + 1}. ${depthEmoji} [C:${combinedScore} M:${c.meatScore?.meatScore ?? 0} D:${c.depthScore?.depthScore ?? 0}] ${c.topic} (${c.sourceCount} sources)${shallowLabel}${deepResearchFlag}`
     );
   });
 
@@ -355,8 +518,14 @@ export async function aggregateTopics(
     (bestCluster?.hotnessScore ?? 0) >= MINIMUM_HOTNESS_THRESHOLD;
 
   if (bestCluster && meetsThreshold) {
-    const combinedScore = calculateCombinedScore(bestCluster);
+    const combinedScore = calculateCombinedScore(bestCluster, category);
     const shallow = bestCluster.depthScore ? isShallowTopic(bestCluster.depthScore) : false;
+
+    // Trigger Deep Research if score > 850
+    const deepResearch = combinedScore > DEEP_RESEARCH_THRESHOLD
+      ? generateDeepResearchPlan(bestCluster, category, combinedScore)
+      : undefined;
+
     selectedTopic = {
       topic: bestCluster.topic,
       hotnessScore: bestCluster.hotnessScore,
@@ -374,11 +543,21 @@ export async function aggregateTopics(
       // Depth-Score fields
       depthScore: bestCluster.depthScore?.depthScore,
       isShallow: shallow,
+      // Deep Research (if triggered)
+      deepResearch,
     };
+
+    const deepLabel = deepResearch ? ' 🔬 [DEEP RESEARCH TRIGGERED]' : '';
     console.log(
       `\n✅ Selected: "${selectedTopic.topic}" ` +
-      `(Combined: ${combinedScore}, Meat: ${selectedTopic.meatScore ?? 'N/A'}, Depth: ${selectedTopic.depthScore ?? 'N/A'})`
+      `(Combined: ${combinedScore}, Meat: ${selectedTopic.meatScore ?? 'N/A'}, Depth: ${selectedTopic.depthScore ?? 'N/A'})${deepLabel}`
     );
+
+    // Output Deep Research Plan JSON if triggered
+    if (deepResearch) {
+      console.log('\n📋 Deep Research Plan:');
+      console.log(JSON.stringify(deepResearch, null, 2));
+    }
   } else {
     // Use fallback
     const fallbackTopic = generateFallbackTopic(category);

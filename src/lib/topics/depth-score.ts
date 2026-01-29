@@ -12,6 +12,81 @@ export interface DepthScoreComponents {
   depthScore: number;         // Combined score (0-1000 scale)
 }
 
+/**
+ * SemanticMeat Components
+ * Ratio of (Proper Nouns + Tech Terms) / Total Tokens
+ */
+export interface SemanticMeatComponents {
+  properNouns: number;        // Count of capitalized multi-word entities
+  techTerms: number;          // Count of recognized technical terminology
+  totalTokens: number;        // Total word count
+  semanticMeat: number;       // Ratio * 1000 for consistency
+}
+
+// Technical terminology patterns for SemanticMeat calculation
+const TECH_TERMS = [
+  // AI/ML
+  /\b(artificial intelligence|machine learning|deep learning|neural network|llm|gpt|transformer|diffusion)\b/i,
+  /\b(reinforcement learning|natural language|computer vision|generative ai|foundation model)\b/i,
+  // Crypto/Blockchain
+  /\b(blockchain|cryptocurrency|bitcoin|ethereum|defi|nft|smart contract|web3)\b/i,
+  // Cloud/Infra
+  /\b(kubernetes|docker|microservices|serverless|cloud native|api|sdk|devops|ci\/cd)\b/i,
+  // Security
+  /\b(cybersecurity|zero-day|ransomware|encryption|vulnerability|exploit|malware|phishing)\b/i,
+  // Biotech
+  /\b(crispr|mrna|gene therapy|biomarker|clinical trial|fda approval|drug discovery)\b/i,
+  // Space/Physics
+  /\b(quantum computing|fusion|satellite|spacecraft|telescope|particle accelerator|dark matter)\b/i,
+  // Economics
+  /\b(gdp|inflation rate|interest rate|quantitative easing|fiscal policy|monetary policy)\b/i,
+  /\b(bond yield|credit default|derivative|hedge fund|private equity|venture capital)\b/i,
+];
+
+/**
+ * Calculate SemanticMeat score
+ * Ratio of (Proper Nouns + Tech Terms) / Total Tokens
+ * Higher ratio = more substantive, entity-rich content
+ */
+export function calculateSemanticMeat(text: string): SemanticMeatComponents {
+  // Tokenize
+  const tokens = text.split(/\s+/).filter(t => t.length > 0);
+  const totalTokens = Math.max(tokens.length, 1);
+
+  // Count proper nouns (capitalized words not at sentence start)
+  // Pattern: Look for capitalized words that follow lowercase words
+  const properNounPattern = /\b[a-z]+\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g;
+  const properNounMatches = text.match(properNounPattern) || [];
+
+  // Also count standalone capitalized multi-word entities (e.g., "United Nations")
+  const entityPattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/g;
+  const entityMatches = text.match(entityPattern) || [];
+
+  // Deduplicate and count
+  const allProperNouns = new Set([...properNounMatches, ...entityMatches]);
+  const properNouns = allProperNouns.size;
+
+  // Count tech terms
+  let techTermCount = 0;
+  for (const pattern of TECH_TERMS) {
+    const matches = text.match(pattern);
+    if (matches) {
+      techTermCount += matches.length;
+    }
+  }
+
+  // Calculate ratio (scaled to 0-1000)
+  const ratio = (properNouns + techTermCount) / totalTokens;
+  const semanticMeat = Math.round(Math.min(ratio * 5, 1) * 1000); // Cap at 1000
+
+  return {
+    properNouns,
+    techTerms: techTermCount,
+    totalTokens,
+    semanticMeat,
+  };
+}
+
 // Keywords indicating broad systemic impact
 const SYSTEMIC_IMPACT_KEYWORDS = {
   policy: [
@@ -81,7 +156,7 @@ const TECH_COMPANY_RELEASE_PATTERNS = [
   /\b(iphone|ipad|mac|pixel|surface|galaxy)\b.*\b(update|new|release)/i,
 ];
 
-// Negative signal patterns (promotional, clickbait, listicles)
+// Negative signal patterns (promotional, clickbait, listicles, pronominal gaps)
 const NEGATIVE_SIGNALS = {
   // Promotional patterns
   promotional: [
@@ -96,11 +171,21 @@ const NEGATIVE_SIGNALS = {
     /\b(what happens next|will shock you|changed everything)\b/i,
     /\b(finally revealed|exposed|the truth about)\b/i,
   ],
-  // Listicle patterns (often shallow)
+  // Pronominal Gaps - vague pronoun references (40% penalty)
+  // "This one thing...", "What they did...", "Here's why..."
+  pronominalGap: [
+    /^(this|that|these|those)\s+(one|thing|trick|hack|reason|secret)/i,
+    /^(what|why|how)\s+(they|he|she|it|we)\s+(did|found|discovered)/i,
+    /^here'?s?\s+(why|what|how)/i,
+    /^(the\s+)?reason\s+(why|that)\b/i,
+  ],
+  // Listicle patterns - ONLY penalize if title STARTS with a number
+  // Mid-sentence numbers are fine (e.g., "Company raises $5 million")
   listicle: [
-    /^\d+\s+(things|ways|reasons|tips|tricks|hacks|secrets)/i,
-    /\btop\s+\d+\b/i,
-    /\bbest\s+\d+\b/i,
+    /^\d+\s+(things|ways|reasons|tips|tricks|hacks|secrets|steps|rules|signs|facts)/i,
+    /^top\s+\d+\b/i,
+    /^best\s+\d+\b/i,
+    /^the\s+\d+\s+(best|top|most|worst)/i,
   ],
 };
 
@@ -160,7 +245,7 @@ function calculateSystemicImpact(text: string): number {
 
 /**
  * Calculate negative signal penalty for low-quality patterns
- * Returns 0-0.3 (0 = no penalty, 0.3 = max penalty for promotional/clickbait)
+ * Returns 0-0.4 (0 = no penalty, 0.4 = max penalty for pronominal gaps)
  */
 export function calculateNegativePenalty(text: string): number {
   let penalty = 0;
@@ -169,14 +254,30 @@ export function calculateNegativePenalty(text: string): number {
     for (const pattern of patterns) {
       if (pattern.test(text)) {
         // Different penalties by type
-        const typePenalty = type === 'clickbait' ? 0.15 : type === 'promotional' ? 0.12 : 0.08;
+        let typePenalty: number;
+        switch (type) {
+          case 'pronominalGap':
+            typePenalty = 0.40; // Strongest penalty - structural anti-clickbait
+            break;
+          case 'clickbait':
+            typePenalty = 0.15;
+            break;
+          case 'promotional':
+            typePenalty = 0.12;
+            break;
+          case 'listicle':
+            typePenalty = 0.08;
+            break;
+          default:
+            typePenalty = 0.08;
+        }
         penalty += typePenalty;
       }
     }
   }
 
-  // Cap at 30% penalty
-  return Math.min(penalty, 0.3);
+  // Cap at 40% penalty (pronominal gap alone can hit max)
+  return Math.min(penalty, 0.4);
 }
 
 /**

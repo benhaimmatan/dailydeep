@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { autoSelectTopic } from '@/lib/topics/selector';
 import { runGeneration } from '@/lib/generation/runner';
@@ -109,10 +110,10 @@ export async function GET(request: NextRequest) {
     category_name: category.name,
   });
 
-  // 9. Start generation (fire-and-forget)
+  // 9. Start generation in background using waitUntil to keep function alive
   // Use service role client to bypass RLS for write operations
   const serviceClient = createServiceRoleClient();
-  runGeneration(job.id, topic, category.name, serviceClient);
+  waitUntil(runGeneration(job.id, topic, category.name, serviceClient));
 
   return NextResponse.json({
     success: true,

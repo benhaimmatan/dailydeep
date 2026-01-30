@@ -5,6 +5,8 @@ import { LatestReport } from '@/components/home/latest-report'
 import { calculateReadingTime } from '@/lib/utils/reading-time'
 import type { ReportWithCategory } from '@/types/database'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'The Daily Deep | Premium Investigative Reports',
   description:

@@ -6,6 +6,8 @@ import { CategoryFilter } from '@/components/archive/category-filter'
 import { ArchiveGrid } from '@/components/archive/archive-grid'
 import type { Category, ReportWithCategory } from '@/types/database'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Archive | The Daily Deep',
   description: 'Browse all published investigative reports',

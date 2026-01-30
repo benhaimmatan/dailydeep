@@ -33,7 +33,7 @@ const RETRY_CONFIG = {
  */
 const CONTENT_RETRY_CONFIG = {
   maxRetries: 2, // Up to 2 content retries
-  minWordCount: 3000,
+  minWordCount: 2500, // Target is 3000-3500, allow some flexibility
 };
 
 /**

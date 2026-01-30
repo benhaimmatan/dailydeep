@@ -20,16 +20,13 @@ export default async function Home() {
   const supabase = await createClient()
 
   // Get the most recent published report
-  const { data: report, error } = await supabase
+  const { data: report } = await supabase
     .from('reports')
     .select('*, category:categories(*)')
     .eq('status', 'published')
     .order('published_at', { ascending: false })
     .limit(1)
     .single()
-
-  // Debug logging
-  console.log('[Home] Query result:', { report: report?.id, error: error?.message })
 
   // If no published reports, show hero CTA
   if (!report) {

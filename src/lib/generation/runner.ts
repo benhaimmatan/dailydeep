@@ -94,6 +94,8 @@ export async function runGeneration(
       throw saveError;
     }
 
+    console.log(`[Generation ${jobId}] Report saved successfully with id: ${savedReport.id}`);
+
     // Record in topic history
     await supabase.from('topic_history').insert({
       topic,
@@ -111,6 +113,8 @@ export async function runGeneration(
         completed_at: new Date().toISOString(),
       })
       .eq('id', jobId);
+
+    console.log(`[Generation ${jobId}] Generation completed successfully!`);
   } catch (error: unknown) {
     // Mark job as failed with user-friendly error message
     const rawError = extractErrorMessage(error);

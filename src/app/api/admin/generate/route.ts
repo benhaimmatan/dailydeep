@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { runGeneration } from '@/lib/generation/runner';
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
@@ -62,7 +62,9 @@ export async function POST(request: Request) {
 
     // Start generation in background using waitUntil to keep function alive
     // This allows Vercel serverless to complete the async work after returning response
-    waitUntil(runGeneration(job.id, topic.trim(), category?.name || 'General', supabase));
+    // Use service role client to bypass RLS for write operations
+    const serviceClient = createServiceRoleClient();
+    waitUntil(runGeneration(job.id, topic.trim(), category?.name || 'General', serviceClient));
 
     return NextResponse.json({ jobId: job.id });
   } catch (error) {

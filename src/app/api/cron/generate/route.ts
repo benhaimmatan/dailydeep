@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { autoSelectTopic } from '@/lib/topics/selector';
 import { runGeneration } from '@/lib/generation/runner';
 import {
@@ -110,7 +110,9 @@ export async function GET(request: NextRequest) {
   });
 
   // 9. Start generation (fire-and-forget)
-  runGeneration(job.id, topic, category.name, supabase);
+  // Use service role client to bypass RLS for write operations
+  const serviceClient = createServiceRoleClient();
+  runGeneration(job.id, topic, category.name, serviceClient);
 
   return NextResponse.json({
     success: true,

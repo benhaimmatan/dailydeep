@@ -135,7 +135,7 @@ export function ReportList({ reports }: ReportListProps) {
               >
                 <td className="p-4">
                   <Link
-                    href={`/reports/${report.slug}`}
+                    href={`/report/${report.slug}`}
                     className="text-foreground hover:text-accent transition-colors font-medium"
                   >
                     {report.title}
@@ -197,7 +197,7 @@ export function ReportList({ reports }: ReportListProps) {
           <div key={report.id} className="p-4 space-y-3">
             <div className="flex justify-between items-start">
               <Link
-                href={`/reports/${report.slug}`}
+                href={`/report/${report.slug}`}
                 className="text-foreground hover:text-accent transition-colors font-medium"
               >
                 {report.title}

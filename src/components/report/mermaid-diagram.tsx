@@ -19,11 +19,19 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
     let isMounted = true
 
     async function renderChart() {
-      if (!containerRef.current) return
+      console.log('[Mermaid] Starting render, chart length:', chart.length)
+      console.log('[Mermaid] Chart preview:', chart.slice(0, 100))
+
+      if (!containerRef.current) {
+        console.log('[Mermaid] No container ref, aborting')
+        return
+      }
 
       try {
+        console.log('[Mermaid] Importing mermaid library...')
         // Dynamic import to avoid SSR issues
         const mermaid = (await import('mermaid')).default
+        console.log('[Mermaid] Library imported successfully')
 
         // Initialize with dark theme and gold colors
         mermaid.initialize({
@@ -69,14 +77,18 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         // Generate unique ID for this diagram
         const id = `mermaid-${Math.random().toString(36).substring(2, 9)}`
 
+        console.log('[Mermaid] Calling mermaid.render with id:', id)
         // Render the chart
         const { svg } = await mermaid.render(id, chart)
+        console.log('[Mermaid] Render complete, svg length:', svg?.length)
 
         if (isMounted && containerRef.current) {
           containerRef.current.innerHTML = svg
           setIsLoading(false)
+          console.log('[Mermaid] Chart rendered successfully')
         }
       } catch (err) {
+        console.error('[Mermaid] Rendering error:', err)
         if (isMounted) {
           console.error('Mermaid rendering error:', err)
           setError(err instanceof Error ? err.message : 'Failed to render diagram')

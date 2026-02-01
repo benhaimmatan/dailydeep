@@ -17,13 +17,11 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   useEffect(() => {
     let isMounted = true
+    const container = containerRef.current
 
     async function renderChart() {
-      // Wait for next frame to ensure ref is attached
-      await new Promise(resolve => requestAnimationFrame(resolve))
-
-      if (!containerRef.current) {
-        console.warn('[Mermaid] No container ref after frame, aborting')
+      if (!container) {
+        console.warn('[Mermaid] No container ref')
         return
       }
 
@@ -78,8 +76,8 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         // Render the chart
         const { svg } = await mermaid.render(id, chart)
 
-        if (isMounted && containerRef.current) {
-          containerRef.current.innerHTML = svg
+        if (isMounted && container) {
+          container.innerHTML = svg
           setIsLoading(false)
         }
       } catch (err) {
@@ -114,25 +112,21 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
     )
   }
 
-  // Loading skeleton
-  if (isLoading) {
-    return (
-      <figure className="my-8">
+  return (
+    <figure className="my-8 max-w-full overflow-x-auto">
+      {/* Always render container so ref is attached */}
+      <div
+        ref={containerRef}
+        className="mermaid-container flex justify-center [&>svg]:max-w-full [&>svg]:h-auto"
+      />
+      {/* Show loading overlay while rendering */}
+      {isLoading && (
         <div className="bg-muted rounded-md p-8 animate-pulse">
           <div className="h-48 bg-foreground/10 rounded flex items-center justify-center">
             <span className="text-foreground/40 text-sm">Loading chart...</span>
           </div>
         </div>
-      </figure>
-    )
-  }
-
-  return (
-    <figure className="my-8 max-w-full overflow-x-auto">
-      <div
-        ref={containerRef}
-        className="mermaid-container flex justify-center [&>svg]:max-w-full [&>svg]:h-auto"
-      />
+      )}
     </figure>
   )
 }

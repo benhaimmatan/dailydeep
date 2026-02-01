@@ -97,7 +97,7 @@ export interface TrendingTopic {
 export interface SourceConfig {
   name: string;
   tier: 0 | 1 | 2 | 3; // 0 = Deep analysis, 1 = Premium, 2 = Quality, 3 = General
-  type: 'rss' | 'api' | 'hackernews' | 'reddit';
+  type: 'rss' | 'api' | 'hackernews' | 'reddit' | 'googletrends';
   url: string;
   categories: string[]; // Which categories this source is relevant for
 }

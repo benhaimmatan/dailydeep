@@ -161,6 +161,76 @@ async function fetchHackerNews(source: SourceConfig): Promise<RawHeadline[]> {
 }
 
 /**
+ * Fetch from Google Trends via Apify API
+ * Returns "Trending Now" data - real-time trending searches
+ */
+async function fetchGoogleTrends(source: SourceConfig): Promise<RawHeadline[]> {
+  const apiToken = process.env.APIFY_API_TOKEN;
+  if (!apiToken) {
+    console.warn('APIFY_API_TOKEN not set, skipping Google Trends');
+    return [];
+  }
+
+  try {
+    const response = await fetch(`${source.url}?token=${apiToken}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        geo: 'US',
+        maxItems: 20,
+      }),
+      next: { revalidate: 1800 }, // Cache for 30 min
+    });
+
+    if (!response.ok) {
+      console.warn(`Google Trends fetch failed: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+
+    // Handle both array response and object with items
+    const items = Array.isArray(data) ? data : (data.items || data.data || []);
+
+    return items
+      .slice(0, 20)
+      .map((item: {
+        title?: string;
+        query?: string;
+        entityNames?: string[];
+        traffic?: string | number;
+        formattedTraffic?: string;
+        relatedQueries?: string[];
+        articles?: Array<{ title?: string; url?: string }>;
+        shareUrl?: string;
+      }) => {
+        // Extract title from various possible fields
+        const title = item.title || item.query || item.entityNames?.[0] || '';
+
+        // Use article URL if available, or Google Trends share URL
+        const url = item.articles?.[0]?.url || item.shareUrl ||
+          `https://trends.google.com/trends/explore?q=${encodeURIComponent(title)}&geo=US`;
+
+        return {
+          title,
+          url,
+          source: 'Google Trends',
+          sourceTier: source.tier,
+          publishedAt: new Date(),
+          description: item.formattedTraffic ||
+            (typeof item.traffic === 'number' ? `${item.traffic.toLocaleString()}+ searches` : item.traffic),
+        };
+      })
+      .filter((h: RawHeadline) => h.title && h.title.length > 2);
+  } catch (error) {
+    console.error('Google Trends fetch error:', error);
+    return [];
+  }
+}
+
+/**
  * Fetch from Reddit API
  */
 async function fetchReddit(source: SourceConfig): Promise<RawHeadline[]> {
@@ -221,6 +291,8 @@ export async function fetchFromSource(source: SourceConfig): Promise<RawHeadline
       return fetchHackerNews(source);
     case 'reddit':
       return fetchReddit(source);
+    case 'googletrends':
+      return fetchGoogleTrends(source);
     default:
       console.warn(`Unknown source type: ${source.type}`);
       return [];

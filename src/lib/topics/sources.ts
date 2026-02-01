@@ -5,6 +5,15 @@
 
 import { SourceConfig } from './types';
 
+// Google Trends source (shared across categories to avoid duplicate API calls)
+const GOOGLE_TRENDS_SOURCE: SourceConfig = {
+  name: 'Google Trends',
+  tier: 1,
+  type: 'googletrends',
+  url: 'https://api.apify.com/v2/acts/early_kiosk~google-trends-scraper/run-sync-get-dataset-items',
+  categories: ['Geopolitics', 'Economics', 'Technology', 'Society', 'Conflict'],
+};
+
 // Category mapping to source configurations
 export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
   Geopolitics: [
@@ -12,7 +21,8 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
     { name: 'Foreign Affairs', tier: 0, type: 'rss', url: 'https://www.foreignaffairs.com/rss.xml', categories: ['Geopolitics'] },
     { name: 'Foreign Policy', tier: 0, type: 'rss', url: 'https://foreignpolicy.com/feed/', categories: ['Geopolitics'] },
     { name: 'The Diplomat', tier: 0, type: 'rss', url: 'https://thediplomat.com/feed/', categories: ['Geopolitics'] },
-    // Tier 1 - Premium quality (wire services)
+    // Tier 1 - Premium quality (wire services + trends)
+    GOOGLE_TRENDS_SOURCE,
     { name: 'Google News World', tier: 1, type: 'rss', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB', categories: ['Geopolitics'] },
     { name: 'ABC News International', tier: 1, type: 'rss', url: 'https://abcnews.go.com/abcnews/internationalheadlines', categories: ['Geopolitics'] },
     { name: 'BBC World', tier: 1, type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', categories: ['Geopolitics'] },
@@ -29,7 +39,8 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
     { name: 'The Economist', tier: 0, type: 'rss', url: 'https://www.economist.com/finance-and-economics/rss.xml', categories: ['Economics'] },
     { name: 'Project Syndicate', tier: 0, type: 'rss', url: 'https://www.project-syndicate.org/rss', categories: ['Economics'] },
     { name: 'Brookings', tier: 0, type: 'rss', url: 'https://www.brookings.edu/feed/', categories: ['Economics'] },
-    // Tier 1 - Premium financial
+    // Tier 1 - Premium financial + trends
+    GOOGLE_TRENDS_SOURCE,
     { name: 'Google News Business', tier: 1, type: 'rss', url: 'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en', categories: ['Economics'] },
     { name: 'FT', tier: 1, type: 'api', url: 'https://saurav.tech/NewsAPI/top-headlines/category/business/us.json', categories: ['Economics'] },
     // Tier 2 - Business news
@@ -44,7 +55,8 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
     // Tier 0 - Deep Analysis (investigation-focused)
     { name: 'MIT Technology Review', tier: 0, type: 'rss', url: 'https://www.technologyreview.com/feed/', categories: ['Technology'] },
     { name: 'Stratechery', tier: 0, type: 'rss', url: 'https://stratechery.com/feed/', categories: ['Technology'] },
-    // Tier 1 - Tech authority
+    // Tier 1 - Tech authority + trends
+    GOOGLE_TRENDS_SOURCE,
     { name: 'HackerNews', tier: 1, type: 'hackernews', url: 'https://hacker-news.firebaseio.com/v0/topstories.json', categories: ['Technology'] },
     { name: 'Ars Technica', tier: 1, type: 'rss', url: 'https://feeds.arstechnica.com/arstechnica/index', categories: ['Technology'] },
     { name: 'Wired', tier: 1, type: 'rss', url: 'https://www.wired.com/feed/rss', categories: ['Technology'] },
@@ -74,7 +86,8 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
     // Tier 0 - Deep Analysis
     { name: 'The Atlantic', tier: 0, type: 'rss', url: 'https://www.theatlantic.com/feed/all/', categories: ['Society'] },
     { name: 'The New Yorker', tier: 0, type: 'rss', url: 'https://www.newyorker.com/feed/news', categories: ['Society'] },
-    // Tier 1 - Quality analysis
+    // Tier 1 - Quality analysis + trends
+    GOOGLE_TRENDS_SOURCE,
     { name: 'Guardian', tier: 1, type: 'rss', url: 'https://www.theguardian.com/society/rss', categories: ['Society'] },
     { name: 'Atlantic General', tier: 1, type: 'api', url: 'https://saurav.tech/NewsAPI/top-headlines/category/general/us.json', categories: ['Society'] },
     // Tier 2
@@ -106,7 +119,8 @@ export const CATEGORY_SOURCES: Record<string, SourceConfig[]> = {
     // Tier 0 - Deep Analysis (investigation-focused)
     { name: 'International Crisis Group', tier: 0, type: 'rss', url: 'https://www.crisisgroup.org/rss.xml', categories: ['Conflict', 'Geopolitics'] },
     { name: 'War on the Rocks', tier: 0, type: 'rss', url: 'https://warontherocks.com/feed/', categories: ['Conflict', 'Geopolitics'] },
-    // Tier 1 - Wire services
+    // Tier 1 - Wire services + trends
+    GOOGLE_TRENDS_SOURCE,
     { name: 'Google News World', tier: 1, type: 'rss', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB', categories: ['Conflict', 'Geopolitics'] },
     { name: 'ABC News International', tier: 1, type: 'rss', url: 'https://abcnews.go.com/abcnews/internationalheadlines', categories: ['Conflict', 'Geopolitics'] },
     { name: 'BBC World', tier: 1, type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', categories: ['Conflict'] },

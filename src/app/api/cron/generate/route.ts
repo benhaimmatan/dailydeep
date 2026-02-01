@@ -20,18 +20,9 @@ export async function GET(request: NextRequest) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // 2. Weekend check (extra safety - schedule already excludes weekends)
+  // 2. Get day of week for category selection
   const today = new Date();
   const dayOfWeek = today.getUTCDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    await logCronRun(supabase, {
-      started_at: startedAt,
-      completed_at: new Date().toISOString(),
-      status: 'skipped',
-      skip_reason: 'Weekend - no generation scheduled',
-    });
-    return NextResponse.json({ success: true, message: 'Weekend - skipped' });
-  }
 
   // 3. Idempotency check - report already exists for today
   if (await hasReportForToday(supabase)) {
@@ -56,7 +47,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, message: 'Generation in progress' });
   }
 
-  // 5. Get today's category (day_of_week: 1=Mon, 5=Fri)
+  // 5. Get today's category (day_of_week: 0=Sun for weekly generation)
   const { data: category, error: catError } = await supabase
     .from('categories')
     .select('id, name')

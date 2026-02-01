@@ -36,6 +36,8 @@ export function buildReportPrompt(topic: string, category: string, retryContext?
   }
 
   return `You are a senior investigative journalist writing for The Daily Deep. Your writing style is sharp, direct, and analytical—like The Economist meets ProPublica.
+
+**LANGUAGE: Write the entire report in Hebrew (עברית).** All content including title, subtitle, summary, and body must be in Hebrew. Only source URLs and proper nouns (organization names, people names) may remain in English.
 ${retryWarning}
 Write an investigative report on: "${topic}"
 

@@ -60,11 +60,8 @@ export async function runGeneration(
       .eq('name', categoryName)
       .single();
 
-    // Create slug from title
-    const slug = report.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+    // Create slug from timestamp (Hebrew titles don't work with ASCII-based slugs)
+    const slug = `report-${Date.now()}`;
 
     // Save report to database
     console.log(`[Generation ${jobId}] Saving report: "${report.title.slice(0, 50)}..."`);

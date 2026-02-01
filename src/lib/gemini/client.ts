@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { reportJsonSchema, ReportSchema, ReportOutput } from './schemas';
 import { buildReportPrompt } from './prompts';
+import { validateMermaidCharts, formatValidationErrors } from './mermaid-validator';
 
 /**
  * Custom error class that preserves raw response for debugging
@@ -29,12 +30,21 @@ const RETRY_CONFIG = {
 };
 
 /**
- * Retry configuration for content quality issues (e.g., too short)
+ * Retry configuration for content quality issues (e.g., too short, invalid charts)
  */
 const CONTENT_RETRY_CONFIG = {
   maxRetries: 2, // Up to 2 content retries
   minWordCount: 1800, // Target is 2000-2500, allow some flexibility
 };
+
+/**
+ * Context for content retries (tracks what went wrong)
+ */
+interface ContentRetryContext {
+  attempt: number;
+  previousWordCount?: number;
+  chartErrors?: string[];
+}
 
 /**
  * Check if an error is retryable
@@ -115,15 +125,12 @@ export async function generateReport(
 ): Promise<GenerateReportResult> {
   const ai = createGeminiClient();
 
-  // Outer loop for content quality retries (e.g., too short)
+  // Outer loop for content quality retries (e.g., too short, invalid charts)
   let contentRetryAttempt = 0;
-  let previousWordCount = 0;
+  let retryContext: ContentRetryContext | undefined;
 
   while (contentRetryAttempt <= CONTENT_RETRY_CONFIG.maxRetries) {
     // Build prompt with retry context if this is a content retry
-    const retryContext = contentRetryAttempt > 0
-      ? { attempt: contentRetryAttempt, previousWordCount }
-      : undefined;
     const prompt = buildReportPrompt(topic, category, retryContext);
 
     let lastError: Error | null = null;
@@ -214,14 +221,39 @@ export async function generateReport(
         // Check if content is too short - retry if we have attempts left
         if (wordCount < CONTENT_RETRY_CONFIG.minWordCount) {
           if (contentRetryAttempt < CONTENT_RETRY_CONFIG.maxRetries) {
-            previousWordCount = wordCount;
             contentRetryAttempt++;
+            retryContext = { attempt: contentRetryAttempt, previousWordCount: wordCount };
             await onProgress?.(`Content too short: ${wordCount} words / ${charCount} chars (need ${CONTENT_RETRY_CONFIG.minWordCount}+ words). Regenerating... [retry ${contentRetryAttempt}/${CONTENT_RETRY_CONFIG.maxRetries}]`);
             break; // Break inner loop to retry with new prompt
           }
           // No more content retries - throw error
           throw new GenerationError(
             `Report too short: ${wordCount} words (minimum ${CONTENT_RETRY_CONFIG.minWordCount}) after ${contentRetryAttempt} content retries`,
+            rawResponse,
+            fieldLengths
+          );
+        }
+
+        // Validate Mermaid charts
+        const mermaidValidation = validateMermaidCharts(validated.content);
+        if (mermaidValidation.warnings.length > 0) {
+          await onProgress?.(`Chart warnings: ${mermaidValidation.warnings.join('; ')}`);
+        }
+
+        if (!mermaidValidation.isValid) {
+          if (contentRetryAttempt < CONTENT_RETRY_CONFIG.maxRetries) {
+            contentRetryAttempt++;
+            retryContext = {
+              attempt: contentRetryAttempt,
+              previousWordCount: wordCount,
+              chartErrors: mermaidValidation.errors,
+            };
+            await onProgress?.(`Chart validation failed: ${formatValidationErrors(mermaidValidation)}. Regenerating... [retry ${contentRetryAttempt}/${CONTENT_RETRY_CONFIG.maxRetries}]`);
+            break; // Break inner loop to retry with new prompt
+          }
+          // No more content retries - throw error
+          throw new GenerationError(
+            `Chart validation failed after ${contentRetryAttempt} retries: ${mermaidValidation.errors.join('; ')}`,
             rawResponse,
             fieldLengths
           );

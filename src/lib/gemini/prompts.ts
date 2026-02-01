@@ -1,13 +1,39 @@
 /**
+ * Retry context for content quality issues
+ */
+interface RetryContext {
+  attempt: number;
+  previousWordCount?: number;
+  chartErrors?: string[];
+}
+
+/**
  * Build the report generation prompt
  *
  * Creates a detailed prompt for Gemini to generate investigative reports
  * matching The Daily Deep's editorial standards.
  */
-export function buildReportPrompt(topic: string, category: string, retryContext?: { attempt: number; previousWordCount: number }): string {
-  const retryWarning = retryContext
-    ? `\n\n⚠️ CRITICAL WARNING: Your previous attempt produced only ${retryContext.previousWordCount} words, which is ${1800 - retryContext.previousWordCount} words SHORT of the minimum. You MUST write significantly more content this time. This is attempt ${retryContext.attempt + 1}.\n`
-    : '';
+export function buildReportPrompt(topic: string, category: string, retryContext?: RetryContext): string {
+  let retryWarning = '';
+
+  if (retryContext) {
+    const parts: string[] = [];
+    parts.push(`⚠️ CRITICAL WARNING: This is attempt ${retryContext.attempt + 1}. Your previous attempt had issues:`);
+
+    if (retryContext.previousWordCount && retryContext.previousWordCount < 1800) {
+      parts.push(`- Content too short: ${retryContext.previousWordCount} words (need 1800+ words). Write MORE content.`);
+    }
+
+    if (retryContext.chartErrors && retryContext.chartErrors.length > 0) {
+      parts.push(`- Chart validation errors:`);
+      for (const error of retryContext.chartErrors) {
+        parts.push(`  • ${error}`);
+      }
+      parts.push(`\nYou MUST fix these chart issues. See the MERMAID CHART REQUIREMENTS section below.`);
+    }
+
+    retryWarning = '\n\n' + parts.join('\n') + '\n';
+  }
 
   return `You are a senior investigative journalist writing for The Daily Deep. Your writing style is sharp, direct, and analytical—like The Economist meets ProPublica.
 ${retryWarning}
@@ -118,11 +144,28 @@ This is where you provide the **educational value**. This section should be subs
 ### 8. What's Next (1-2 paragraphs)
 Concrete upcoming milestones, decisions, or events to watch.
 
-## MERMAID VISUALIZATIONS (REQUIRED)
+## MERMAID CHART REQUIREMENTS (CRITICAL)
 
-Include **2-3 Mermaid charts** to visualize data instead of describing it in prose. Use charts instead of lengthy data descriptions.
+Include **2-3 Mermaid charts** to visualize data. Charts will be validated - follow these rules EXACTLY:
 
-**Bar Chart** - Use for comparisons (3-8 items):
+### VALIDATION RULES (Your charts MUST pass these checks):
+1. **EVERY chart MUST have a title** - No exceptions
+2. **Bar charts (xychart-beta) MUST have:**
+   - \`title "Your Title Here"\` - descriptive title in quotes
+   - \`x-axis ["Label1", "Label2", ...]\` - array of category labels
+   - \`y-axis "Unit" min --> max\` - label with numeric range
+   - \`bar [value1, value2, ...]\` - data array
+3. **Pie charts MUST have:**
+   - \`title "Short Title"\` - KEEP UNDER 50 CHARACTERS (will fail if too long)
+   - At least 2 data segments with labels
+   - Full words only - no truncated labels
+4. **Timelines MUST have:**
+   - \`title Your Title\`
+   - At least 2 dated entries in format: \`YYYY : Description\`
+
+### CORRECT EXAMPLES:
+
+**Bar Chart (xychart-beta):**
 \`\`\`mermaid
 xychart-beta
     title "Defense Spending 2024"
@@ -131,7 +174,7 @@ xychart-beta
     bar [886, 292, 86, 83]
 \`\`\`
 
-**Pie Chart** - Use for parts of a whole:
+**Pie Chart:**
 \`\`\`mermaid
 pie showData title "EV Market Share"
     "Tesla" : 19.5
@@ -139,14 +182,21 @@ pie showData title "EV Market Share"
     "Others" : 63.4
 \`\`\`
 
-**Timeline** - Use for historical context or sequences:
+**Timeline:**
 \`\`\`mermaid
 timeline
     title Key Events
-    2020 : Announcement
-    2023 : Launch
-    2024 : Expansion
+    2020 : Initial Announcement
+    2023 : Product Launch
+    2024 : Global Expansion
 \`\`\`
+
+### COMMON MISTAKES TO AVOID:
+- ❌ Missing title keyword
+- ❌ Pie chart title over 50 characters (e.g., "Distribution of Attributed Causes..." is too long)
+- ❌ Truncated labels (e.g., "buted Causes" instead of "Attributed Causes")
+- ❌ Missing x-axis or y-axis labels on bar charts
+- ❌ Only 1 chart (minimum 2 required)
 
 **Chart Selection Guide:**
 | Data Type | Chart Type | When to Use |

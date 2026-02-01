@@ -29,8 +29,8 @@ export const ReportSchema = z.object({
     .describe('Executive summary in 2-3 sentences, 100-500 characters'),
 
   content: z.string()
-    .min(15000) // ~3000 words minimum
-    .describe('Full markdown report content. Must be 3000+ words with headers, tables, data points, and analysis.'),
+    .min(10000) // ~2000 words minimum
+    .describe('Full markdown report content. Must be 2000+ words with headers, Mermaid charts, tables, and analysis.'),
 
   sources: z.array(SourceSchema)
     .min(5)
@@ -73,7 +73,7 @@ export const reportJsonSchema = {
     },
     content: {
       type: 'string',
-      description: 'Full markdown report content. Must be 3000+ words with headers, tables, data points, and analysis.',
+      description: 'Full markdown report content. Must be 2000+ words with headers, Mermaid charts, tables, and analysis.',
     },
     sources: {
       type: 'array',

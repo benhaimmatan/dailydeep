@@ -3,6 +3,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
+import { MermaidDiagram } from './mermaid-diagram'
 
 interface ReportContentProps {
   content: string
@@ -127,19 +128,34 @@ const components: Components = {
     <li className="text-lg leading-relaxed text-foreground/90">{children}</li>
   ),
 
-  // Code blocks
-  pre: ({ children }) => (
-    <pre className="bg-muted rounded-md p-4 my-6 overflow-x-auto">
-      {children}
-    </pre>
-  ),
+  // Code blocks - detect mermaid and route to MermaidDiagram
+  pre: ({ children }) => {
+    // Extract code element and check for mermaid language
+    const codeElement = children as React.ReactElement<{
+      className?: string
+      children?: string
+    }>
+    const className = codeElement?.props?.className || ''
+    const isMermaid = className.includes('language-mermaid')
+
+    if (isMermaid) {
+      const code = codeElement?.props?.children || ''
+      return <MermaidDiagram chart={String(code).trim()} />
+    }
+
+    return (
+      <pre className="bg-muted rounded-md p-4 my-6 overflow-x-auto">
+        {children}
+      </pre>
+    )
+  },
 
   // Inline code
   code: ({ children, className }) => {
     // Check if this is inside a pre (code block) or inline
     const isBlock = className?.includes('language-')
     if (isBlock) {
-      return <code className="text-sm font-mono">{children}</code>
+      return <code className={className}>{children}</code>
     }
     return (
       <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">

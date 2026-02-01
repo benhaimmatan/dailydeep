@@ -209,14 +209,14 @@ export async function generateReport(
 
         // Additional quality checks
         const wordCount = validated.content.split(/\s+/).length;
+        const charCount = validated.content.length;
 
         // Check if content is too short - retry if we have attempts left
         if (wordCount < CONTENT_RETRY_CONFIG.minWordCount) {
           if (contentRetryAttempt < CONTENT_RETRY_CONFIG.maxRetries) {
-            const shortfall = CONTENT_RETRY_CONFIG.minWordCount - wordCount;
             previousWordCount = wordCount;
             contentRetryAttempt++;
-            await onProgress?.(`Content too short: ${wordCount} words (${shortfall} words below minimum). Regenerating with enhanced prompt... [retry ${contentRetryAttempt}/${CONTENT_RETRY_CONFIG.maxRetries}]`);
+            await onProgress?.(`Content too short: ${wordCount} words / ${charCount} chars (need ${CONTENT_RETRY_CONFIG.minWordCount}+ words). Regenerating... [retry ${contentRetryAttempt}/${CONTENT_RETRY_CONFIG.maxRetries}]`);
             break; // Break inner loop to retry with new prompt
           }
           // No more content retries - throw error
@@ -235,7 +235,7 @@ export async function generateReport(
           );
         }
 
-        await onProgress?.(`Report validated successfully (${wordCount} words)`);
+        await onProgress?.(`Report validated successfully (${wordCount} words, ${charCount} chars)`);
 
         return { report: validated, rawResponse };
       } catch (error) {

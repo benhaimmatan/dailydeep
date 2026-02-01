@@ -29,7 +29,7 @@ export const ReportSchema = z.object({
     .describe('Executive summary in 2-3 sentences, 100-500 characters'),
 
   content: z.string()
-    .min(10000) // ~2000 words minimum
+    .min(1) // Length check is done in client.ts with retry logic
     .describe('Full markdown report content. Must be 2000+ words with headers, Mermaid charts, tables, and analysis.'),
 
   sources: z.array(SourceSchema)

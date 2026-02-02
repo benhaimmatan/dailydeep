@@ -70,7 +70,17 @@ export function LatestReport({ report, readingTime }: LatestReportProps) {
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
         >
           Read Report
-          <span aria-hidden="true">&rarr;</span>
+          <span aria-hidden="true">&larr;</span>
+        </Link>
+      </div>
+
+      {/* Archive Link */}
+      <div className="mt-4">
+        <Link
+          href="/archive"
+          className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+        >
+          View All Reports &larr;
         </Link>
       </div>
     </div>

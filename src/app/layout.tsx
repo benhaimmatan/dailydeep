@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="he" dir="rtl" suppressHydrationWarning>
       <body
         className={`${playfair.variable} ${sourceSans.variable} font-sans antialiased bg-background text-foreground min-h-screen`}
       >

@@ -13,6 +13,7 @@ import {
 export async function GET(request: NextRequest) {
   const startedAt = new Date().toISOString();
   const supabase = await createClient();
+  const serviceClient = createServiceRoleClient(); // For write operations (bypasses RLS)
 
   // 1. Validate CRON_SECRET
   const authHeader = request.headers.get('authorization');
@@ -69,8 +70,8 @@ export async function GET(request: NextRequest) {
   const topic = await autoSelectTopic(category.name, supabase);
   console.log(`📰 Selected topic: ${topic}`);
 
-  // 7. Create generation job
-  const { data: job, error: jobError } = await supabase
+  // 7. Create generation job (use service client to bypass RLS)
+  const { data: job, error: jobError } = await serviceClient
     .from('generation_jobs')
     .insert({
       topic,
@@ -102,8 +103,6 @@ export async function GET(request: NextRequest) {
   });
 
   // 9. Start generation in background using waitUntil to keep function alive
-  // Use service role client to bypass RLS for write operations
-  const serviceClient = createServiceRoleClient();
   waitUntil(runGeneration(job.id, topic, category.name, serviceClient));
 
   return NextResponse.json({

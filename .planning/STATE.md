@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 Phase: 4 of 4 (Polish)
 Plan: 2 of 2 in current phase (04-01, 04-02 complete)
 Status: Phase complete
-Last activity: 2026-01-26 - Completed 04-02-PLAN.md (JSON-LD & Semantic HTML)
+Last activity: 2026-02-02 - Completed quick task 001: RTL and typography fixes
 
 Progress: [████████████████] 100% (13/13 plans)
 
@@ -94,6 +94,12 @@ Recent decisions affecting current work:
 ### Blockers/Concerns
 
 - Budget clarification needed: Research indicates Gemini free tier (5 reports/month) is insufficient for daily production. $20/month minimum for Gemini Advanced recommended. Confirm before Phase 2.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 001 | Fix RTL on article and match regthink font styling | 2026-02-02 | 2b63d28 | [001-fix-rtl-on-article-and-match-regthink-fo](./quick/001-fix-rtl-on-article-and-match-regthink-fo/) |
 
 ## Session Continuity
 

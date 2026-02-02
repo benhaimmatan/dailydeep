@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 Phase: 4 of 4 (Polish)
 Plan: 2 of 2 in current phase (04-01, 04-02 complete)
 Status: Phase complete
-Last activity: 2026-02-02 - Completed quick task 001: RTL and typography fixes
+Last activity: 2026-02-02 - Completed quick task 002: RTL on all pages and archive link
 
 Progress: [████████████████] 100% (13/13 plans)
 
@@ -100,11 +100,12 @@ Recent decisions affecting current work:
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 001 | Fix RTL on article and match regthink font styling | 2026-02-02 | 2b63d28 | [001-fix-rtl-on-article-and-match-regthink-fo](./quick/001-fix-rtl-on-article-and-match-regthink-fo/) |
+| 002 | RTL on all pages and archive link | 2026-02-02 | b6e3a42 | [002-rtl-on-all-pages-and-archive-link](./quick/002-rtl-on-all-pages-and-archive-link/) |
 
 ## Session Continuity
 
-Last session: 2026-01-26
-Stopped at: Completed 04-02-PLAN.md (JSON-LD & Semantic HTML)
+Last session: 2026-02-02
+Stopped at: Completed quick task 002 (RTL on all pages and archive link)
 Resume file: None
 
 ---

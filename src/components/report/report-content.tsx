@@ -37,7 +37,7 @@ const components: Components = {
     return (
       <h2
         id={id}
-        className="font-playfair text-2xl font-bold mt-10 mb-4 text-foreground scroll-mt-24"
+        className="font-playfair text-3xl font-bold mt-10 mb-4 text-foreground scroll-mt-24"
       >
         {children}
       </h2>
@@ -61,9 +61,9 @@ const components: Components = {
     </h4>
   ),
 
-  // Paragraphs with serif feel and relaxed line-height
+  // Paragraphs with serif feel and 20px/1.6 line-height (regthink.org style)
   p: ({ children }) => (
-    <p className="font-serif text-lg leading-relaxed mb-6 text-foreground/90">
+    <p className="font-serif text-[20px] leading-[1.6] mb-6 text-foreground/90">
       {children}
     </p>
   ),
@@ -82,17 +82,17 @@ const components: Components = {
     <tr className="border-b border-border/30">{children}</tr>
   ),
   th: ({ children }) => (
-    <th className="text-left py-3 px-4 font-semibold text-foreground border-b border-border/50">
+    <th className="text-start py-3 px-4 font-semibold text-foreground text-[20px] border-b border-border/50">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="py-3 px-4 text-foreground/90">{children}</td>
+    <td className="py-3 px-4 text-foreground/90 text-[20px]">{children}</td>
   ),
 
-  // Blockquotes with gold left border accent
+  // Blockquotes with gold border accent (RTL-aware: use logical properties)
   blockquote: ({ children }) => (
-    <blockquote className="border-l-4 border-primary pl-4 my-6 italic text-foreground/70">
+    <blockquote className="border-s-4 border-primary ps-4 my-6 italic text-foreground/70 leading-[1.6]">
       {children}
     </blockquote>
   ),
@@ -123,9 +123,9 @@ const components: Components = {
     </ol>
   ),
 
-  // List items
+  // List items with 20px/1.6 typography (matching paragraphs)
   li: ({ children }) => (
-    <li className="text-lg leading-relaxed text-foreground/90">{children}</li>
+    <li className="text-[20px] leading-[1.6] text-foreground/90">{children}</li>
   ),
 
   // Code blocks - detect mermaid and route to MermaidDiagram

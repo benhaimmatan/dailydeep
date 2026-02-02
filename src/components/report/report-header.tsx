@@ -32,9 +32,9 @@ export function ReportHeader({
         {title}
       </h1>
 
-      {/* Subtitle */}
+      {/* Subtitle with 20px/1.6 typography */}
       {subtitle && (
-        <p className="font-serif text-xl text-foreground/70 mb-6">{subtitle}</p>
+        <p className="font-serif text-[20px] leading-[1.6] text-foreground/70 mb-6">{subtitle}</p>
       )}
 
       {/* Meta line: date and reading time */}

@@ -5,7 +5,7 @@ interface ReportSourcesProps {
 }
 
 /**
- * Sources section with numbered citation links
+ * Sources section with numbered citation links (Hebrew)
  */
 export function ReportSources({ sources }: ReportSourcesProps) {
   if (!sources || sources.length === 0) return null
@@ -13,7 +13,7 @@ export function ReportSources({ sources }: ReportSourcesProps) {
   return (
     <section className="mt-12 pt-8 border-t border-border/50">
       <h2 className="font-playfair text-xl font-semibold mb-6 text-foreground">
-        Sources
+        מקורות
       </h2>
       <ol className="list-decimal list-inside space-y-3">
         {sources.map((source, index) => (

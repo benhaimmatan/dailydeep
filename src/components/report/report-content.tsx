@@ -111,14 +111,14 @@ const components: Components = {
     )
   },
 
-  // Unordered lists
+  // Unordered lists (ms-6 for RTL-aware margin-start)
   ul: ({ children }) => (
-    <ul className="list-disc list-outside ml-6 mb-6 space-y-2">{children}</ul>
+    <ul className="list-disc list-outside ms-6 mb-6 space-y-2">{children}</ul>
   ),
 
-  // Ordered lists
+  // Ordered lists (ms-6 for RTL-aware margin-start)
   ol: ({ children }) => (
-    <ol className="list-decimal list-outside ml-6 mb-6 space-y-2">
+    <ol className="list-decimal list-outside ms-6 mb-6 space-y-2">
       {children}
     </ol>
   ),

@@ -76,11 +76,7 @@
   }
 }
 
-/* RTL-specific adjustments */
-[dir="rtl"] ul {
-  @apply mr-6 ml-0;
-}
-
-[dir="rtl"] ol {
-  @apply mr-6 ml-0;
+/* RTL-specific adjustments for elements outside report content */
+[dir="rtl"] .list-inside {
+  @apply mr-4 ml-0;
 }

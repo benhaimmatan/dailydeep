@@ -41,7 +41,7 @@ export function ReportHeader({
       <div className="flex items-center gap-4 text-muted-foreground text-sm">
         <time dateTime={publishedAt}>{formatDate(publishedAt)}</time>
         <span className="text-border">|</span>
-        <span>{readingTime} min read</span>
+        <span>{readingTime} דקות קריאה</span>
       </div>
     </header>
   )

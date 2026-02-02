@@ -62,7 +62,7 @@ export function ReportTOC({ headings }: ReportTOCProps) {
           const isH3 = heading.level === 3
 
           return (
-            <li key={heading.id} className={isH3 ? 'ml-4' : ''}>
+            <li key={heading.id} className={isH3 ? 'ms-4' : ''}>
               <a
                 href={`#${heading.id}`}
                 className={`

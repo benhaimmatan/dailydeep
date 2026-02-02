@@ -75,3 +75,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* RTL-specific adjustments */
+[dir="rtl"] ul {
+  @apply mr-6 ml-0;
+}
+
+[dir="rtl"] ol {
+  @apply mr-6 ml-0;
+}

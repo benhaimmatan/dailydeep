@@ -54,7 +54,7 @@ export function ReportTOC({ headings }: ReportTOCProps) {
       aria-label="Table of contents"
     >
       <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-4">
-        On This Page
+        בעמוד זה
       </h2>
       <ul className="space-y-2 text-sm">
         {headings.map((heading) => {

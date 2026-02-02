@@ -105,7 +105,7 @@ export default async function ReportPage({ params }: PageProps) {
   const jsonLd = generateArticleJsonLd(report)
 
   return (
-    <article className="max-w-6xl mx-auto px-4 py-8">
+    <article dir="rtl" className="max-w-6xl mx-auto px-4 py-8">
       {/* JSON-LD structured data for Google rich results */}
       <script
         type="application/ld+json"
@@ -113,7 +113,12 @@ export default async function ReportPage({ params }: PageProps) {
           __html: safeJsonLdStringify(jsonLd),
         }}
       />
-      <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-12">
+      <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-12">
+        {/* Sidebar with TOC - placed first for RTL layout (appears on left) */}
+        <aside className="hidden lg:block">
+          <ReportTOC headings={headings} />
+        </aside>
+
         {/* Main content */}
         <main>
           <ReportHeader
@@ -130,11 +135,6 @@ export default async function ReportPage({ params }: PageProps) {
             <ReportSources sources={report.sources} />
           )}
         </main>
-
-        {/* Sidebar with TOC */}
-        <aside className="hidden lg:block">
-          <ReportTOC headings={headings} />
-        </aside>
       </div>
     </article>
   )

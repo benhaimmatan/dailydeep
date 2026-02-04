@@ -38,6 +38,24 @@ export function buildReportPrompt(topic: string, category: string, retryContext?
   return `You are a senior investigative journalist writing for The Daily Deep. Your writing style is sharp, direct, and analytical—like The Economist meets ProPublica.
 
 **LANGUAGE: Write the entire report in Hebrew (עברית).** All content including title, subtitle, summary, and body must be in Hebrew. Only source URLs and proper nouns (organization names, people names) may remain in English.
+
+## ⚠️ CRITICAL LENGTH REQUIREMENT ⚠️
+
+**MINIMUM: 2,000 words. TARGET: 2,500 words.**
+
+This is NON-NEGOTIABLE. Reports under 2,000 words will be REJECTED.
+
+**Section word targets:**
+- Quick Facts Box: ~100 words
+- The Bottom Line: ~150 words
+- Why This Matters Now: ~300 words
+- What's Happening & Why: ~500 words
+- Key Data (with visualizations): ~300 words
+- The Debate: ~350 words
+- The Bigger Picture: ~500 words (THIS IS YOUR LONGEST SECTION - be thorough!)
+- What's Next: ~200 words
+
+**Write comprehensively.** Do not summarize or abbreviate. Provide full context, multiple examples, and detailed analysis in each section.
 ${retryWarning}
 Write an investigative report on: "${topic}"
 
@@ -209,7 +227,9 @@ timeline
 
 ## LENGTH & FORMAT
 
-- **Target: 2,000-2,500 words** (~10 minute read). Be concise—let charts do the talking.
+- **MINIMUM: 2,000 words. TARGET: 2,500 words.** This is strictly enforced - anything shorter will be rejected.
+- DO NOT truncate or abbreviate your writing. Write fully developed paragraphs.
+- If you find yourself writing a short section, ADD MORE DETAIL - more examples, more context, more analysis.
 - Use frequent subheadings (every 200-300 words) for skimmability
 - Charts > tables > prose for data
 - Short paragraphs (3-4 sentences max)
@@ -233,5 +253,7 @@ Before submitting, verify:
 - [ ] Claims are attributed to specific sources
 - [ ] The report goes beyond the headline to explain the bigger picture
 
-Write the report now. Be sharp, direct, analytical, and **factually rigorous**.`;
+Write the report now. Be sharp, direct, analytical, and **factually rigorous**.
+
+**FINAL REMINDER: Your report MUST be at least 2,000 words. Count your words. If you're under 2,000, go back and expand "The Bigger Picture" and "The Debate" sections with more detail.**`;
 }

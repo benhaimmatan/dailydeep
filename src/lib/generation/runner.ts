@@ -94,17 +94,16 @@ export async function runGeneration(
 
     console.log(`[Generation ${jobId}] Report saved successfully with id: ${savedReport.id}`);
 
-    // Send email notification (fire-and-forget, don't await to avoid blocking)
-    sendNewReportNotification({
+    // Send email notification (must await in serverless to prevent container termination)
+    const emailResult = await sendNewReportNotification({
       title: savedReport.title,
       slug: savedReport.slug,
-    }).then((result) => {
-      if (result.success) {
-        console.log(`[Generation ${jobId}] Email notification sent`);
-      } else {
-        console.log(`[Generation ${jobId}] Email notification failed: ${result.error}`);
-      }
     });
+    if (emailResult.success) {
+      console.log(`[Generation ${jobId}] Email notification sent`);
+    } else {
+      console.log(`[Generation ${jobId}] Email notification failed: ${emailResult.error}`);
+    }
 
     // Record in topic history
     await supabase.from('topic_history').insert({

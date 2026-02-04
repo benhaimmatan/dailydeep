@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 Phase: 4 of 4 (Polish)
 Plan: 2 of 2 in current phase (04-01, 04-02 complete)
 Status: Phase complete
-Last activity: 2026-02-02 - Completed quick task 002: RTL on all pages and archive link
+Last activity: 2026-02-04 - Completed quick task 003: Email notification on new article
 
 Progress: [████████████████] 100% (13/13 plans)
 
@@ -90,6 +90,7 @@ Recent decisions affecting current work:
 - Apply 002_generation_jobs.sql migration to Supabase before testing generation
 - Apply 003_cron_runs.sql migration to Supabase for cron history tracking
 - Set CRON_SECRET environment variable in Vercel production
+- Set RESEND_API_KEY in Vercel production for email notifications
 
 ### Blockers/Concerns
 
@@ -101,11 +102,12 @@ Recent decisions affecting current work:
 |---|-------------|------|--------|-----------|
 | 001 | Fix RTL on article and match regthink font styling | 2026-02-02 | 2b63d28 | [001-fix-rtl-on-article-and-match-regthink-fo](./quick/001-fix-rtl-on-article-and-match-regthink-fo/) |
 | 002 | RTL on all pages and archive link | 2026-02-02 | b6e3a42 | [002-rtl-on-all-pages-and-archive-link](./quick/002-rtl-on-all-pages-and-archive-link/) |
+| 003 | Email notification on new article | 2026-02-04 | 4624aaa | [003-email-notification-on-new-article](./quick/003-email-notification-on-new-article/) |
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: Completed quick task 002 (RTL on all pages and archive link)
+Last session: 2026-02-04
+Stopped at: Completed quick task 003 (Email notification on new article)
 Resume file: None
 
 ---

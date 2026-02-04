@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { generateReport, GenerationError } from '@/lib/gemini/client';
+import { sendNewReportNotification } from '@/lib/email/notify';
 
 /**
  * Extract error message from any error type (Error, Supabase error object, etc.)
@@ -92,6 +93,18 @@ export async function runGeneration(
     }
 
     console.log(`[Generation ${jobId}] Report saved successfully with id: ${savedReport.id}`);
+
+    // Send email notification (fire-and-forget, don't await to avoid blocking)
+    sendNewReportNotification({
+      title: savedReport.title,
+      slug: savedReport.slug,
+    }).then((result) => {
+      if (result.success) {
+        console.log(`[Generation ${jobId}] Email notification sent`);
+      } else {
+        console.log(`[Generation ${jobId}] Email notification failed: ${result.error}`);
+      }
+    });
 
     // Record in topic history
     await supabase.from('topic_history').insert({

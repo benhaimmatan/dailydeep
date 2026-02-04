@@ -1,4 +1,4 @@
-import { Resend } from 'resend';
+import sgMail from '@sendgrid/mail';
 
 interface NotificationResult {
   success: boolean;
@@ -11,16 +11,17 @@ interface ReportInfo {
 }
 
 /**
- * Get Resend client lazily to avoid build-time initialization errors.
- * Returns null if RESEND_API_KEY is not set.
+ * Initialize SendGrid client lazily.
+ * Returns false if SENDGRID_API_KEY is not set.
  */
-function getResendClient(): Resend | null {
-  const apiKey = process.env.RESEND_API_KEY;
+function initSendGrid(): boolean {
+  const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey) {
-    console.warn('[Email] RESEND_API_KEY not set, email notifications disabled');
-    return null;
+    console.warn('[Email] SENDGRID_API_KEY not set, email notifications disabled');
+    return false;
   }
-  return new Resend(apiKey);
+  sgMail.setApiKey(apiKey);
+  return true;
 }
 
 /**
@@ -31,18 +32,18 @@ export async function sendNewReportNotification(
   report: ReportInfo
 ): Promise<NotificationResult> {
   try {
-    const resend = getResendClient();
-    if (!resend) {
-      return { success: false, error: 'RESEND_API_KEY not configured' };
+    if (!initSendGrid()) {
+      return { success: false, error: 'SENDGRID_API_KEY not configured' };
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dailydeep.co.il';
     const reportUrl = `${siteUrl}/reports/${report.slug}`;
     const recipientEmail = process.env.NOTIFICATION_EMAIL || 'matan.benhaim@gmail.com';
+    const senderEmail = process.env.SENDGRID_FROM_EMAIL || 'matan.benhaim@gmail.com';
 
-    const { error } = await resend.emails.send({
-      from: 'Daily Deep <onboarding@resend.dev>',
+    await sgMail.send({
       to: recipientEmail,
+      from: senderEmail,
       subject: `New Report Published: ${report.title}`,
       html: `
         <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -61,11 +62,7 @@ export async function sendNewReportNotification(
       `,
     });
 
-    if (error) {
-      console.error('[Email] Failed to send notification:', error);
-      return { success: false, error: error.message };
-    }
-
+    console.log('[Email] Notification sent successfully to', recipientEmail);
     return { success: true };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);

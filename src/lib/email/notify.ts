@@ -23,7 +23,7 @@ export async function sendNewReportNotification(
       return { success: false, error: 'NTFY_TOPIC not configured' };
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dailydeep.co.il';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dailydeep.vercel.app';
     const reportUrl = `${siteUrl}/report/${report.slug}`;
 
     const response = await fetch(`https://ntfy.sh/${topic}`, {

@@ -24,7 +24,7 @@ export async function sendNewReportNotification(
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dailydeep.co.il';
-    const reportUrl = `${siteUrl}/reports/${report.slug}`;
+    const reportUrl = `${siteUrl}/report/${report.slug}`;
 
     const response = await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
